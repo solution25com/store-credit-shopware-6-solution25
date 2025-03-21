@@ -1,0 +1,6 @@
+{
+  "sw-order-detail": {
+    "creditCardEditRestrictedTitle": "Order Edit Restricted",
+    "creditCardEditRestrictedMessage": "Changes to orders paid with a Credit Card are not allowed hah."
+  }
+}

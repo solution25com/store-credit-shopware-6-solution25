@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/shopware/trunk/src/Core/System/SystemConfig/Schema/config.xsd">
+
+    <card>
+        <title>Minimal configuration</title>
+
+        <component name="sw-entity-multi-id-select">
+            <name>restrictedProducts</name>
+            <entity>product</entity>
+            <label lang="en-GB">Restricted products</label>
+            <helpText lang="en-GB">Select the products for which you want to be restricted from using store credits</helpText>
+        </component>
+    </card>
+
+    <card>
+    <title>Store Credit Add State</title>
+    <input-field type="bool">
+        <name>runInstallOrderStateCommand</name>
+        <label lang="en-GB">Run Order State Installer</label>
+        <helpText lang="en-GB">Toggle and save to execute the order state installation command.</helpText>
+    </input-field>
+    </card>
+
+    <card>
+        <title> Post Purchase Features</title>
+        <input-field type="bool">
+            <name>postPurchaseFeatures</name>
+            <label lang="en-GB">Enable the post purchase features</label>
+            <default>false</default>
+            <helpText lang="en-GB">Toggle and save to enable the Post Purchase Features for orders paid with Credit card or ACH eCheck.</helpText>
+        </input-field>
+    </card>
+
+</config>

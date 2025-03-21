@@ -1,0 +1,65 @@
+{% sw_extends '@Storefront/storefront/page/checkout/_page.html.twig' %}
+
+{% block page_checkout_summary_list %}
+    {{ parent() }}
+    {% set storeCreditId = page.storeCreditId %}
+
+    {% if activeRoute == 'frontend.checkout.confirm.page' %}
+        <div class="store-credit-balance" data-cart-price>
+            {% set maxCreditPerOrder = page.maxCreditPerOrder %}
+            {% if page.storeCreditBalance > 0 %}
+            <div class="cds-checkout-store-credit">
+                <a class="cds-btn-store-credit collapsed d-flex align-items-center justify-content-center"
+                   data-bs-toggle="collapse" href="#storeCredit"
+                   role="button" aria-expanded="false" aria-controls="storeCredit">
+                    <p class="mb-0 w-100 d-flex align-items-center">
+                        {{ 'store-credit.title'|trans|sw_sanitize }}
+                    </p>
+                    {% sw_icon 'chevron-down' style { 'pack': 'cdstheme' } %}
+                </a>
+                    <div class="collapse" id="storeCredit">
+                        <div class="card card-body cds-store-credit-card-body">
+                            <p class="store-credit-balance">
+                                {% if page.cart.lineItems.elements[storeCreditId].price.totalPrice %}
+                                    {% set totalBalanceCalculated = page.storeCreditBalance + page.cart.lineItems.elements[storeCreditId].price.totalPrice %}
+                                    {{ 'store-credit.description'|trans|sw_sanitize }}: {{ totalBalanceCalculated | currency }}
+                                {% else %}
+                                    {% set totalBalanceCalculated = page.storeCreditBalance %}
+                                    {{ 'store-credit.description'|trans|sw_sanitize }}: {{ totalBalanceCalculated | currency }}
+                                {% endif %}
+                            </p>
+                            {% set maxAllowedCredit = min(totalBalanceCalculated, page.cart.price.rawTotal) %}
+                            <form id="store-credit-form" method="POST"
+                                  action="{{ path('frontend.store.credit.apply') }}">
+                                <div class="form-group cds-input-style">
+                                    <input
+                                            type="number"
+                                            id="storeCreditAmount"
+                                            name="amount"
+                                            min="0"
+                                            max="{{ maxAllowedCredit }}"
+                                            step="0.01"
+                                            required
+                                            class="form-control"
+                                            placeholder=""
+                                    >
+                                    <label for="storeCreditAmount"
+                                           class="form-label">{{ 'store-credit.label'|trans }}</label>
+                                    <small id="exceedCreditMessage" style="display: none; color: red;">
+                                        {{ 'store-credit.amount-alert'|trans }}
+                                    </small>
+                                </div>
+                                <button
+                                        type="submit"
+                                        class="btn btn-secondary"
+                                        id="applyCreditButton"
+                                >{{ 'store-credit.button'|trans }}</button>
+                            </form>
+                        </div>
+                    </div>
+            </div>
+            {% endif %}
+        </div>
+    {% endif %}
+    <template data-storecredit-plugin></template>
+{% endblock %}

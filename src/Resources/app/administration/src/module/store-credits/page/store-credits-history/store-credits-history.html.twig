@@ -1,0 +1,45 @@
+<template>
+    <sw-page>
+        <template #content>
+            <div class="customer-details">
+                <sw-button
+                        size="small"
+                        variant="secondary"
+                        @click="goBack"
+                >
+                   Go Back
+                </sw-button>
+                <div class="customer-info">
+                    <h2>{{ customerName }}</h2>
+                    <p>Balance: {{ formatCurrency(customerBalance) }}</p>
+                </div>
+            </div>
+
+            <sw-data-grid
+                    :dataSource="history"
+                    :columns="[
+                    { property: 'amount', label: 'Amount', align: 'right' },
+                    { property: 'reason', label: 'Reason' },
+                    { property: 'createdAt', label: 'Date', align: 'center' }
+                ]"
+                    :isLoading="isLoading"
+            >
+                <template #column-amount="{ item }">
+                    <span
+                            :class="{
+                            'text-success': item.actionType === 'add',
+                            'text-danger': item.actionType === 'deduct'
+                        }"
+                    >
+                        {{ item.actionType === 'add' ? '+' : '-' }}
+                        {{ formatCurrency(item.amount) }}
+                    </span>
+                </template>
+
+                <template #column-createdAt="{ item }">
+                    {{ formatDate(item.createdAt) }}
+                </template>
+            </sw-data-grid>
+        </template>
+    </sw-page>
+</template>

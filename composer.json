@@ -1,0 +1,27 @@
+{
+    "name": "cds/store-credit",
+    "description": "Store Credit for Shopware 6",
+    "type": "shopware-platform-plugin",
+    "version": "1.0.0",
+    "license": "MIT",
+    "require": {
+        "shopware/core": "~6.6.0"
+    },
+    "extra": {
+        "shopware-plugin-class": "StoreCredit\\StoreCredit",
+        "label": {
+            "de-DE": "Store Credit",
+            "en-GB": "Store Credit"
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "StoreCredit\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "StoreCredit\\Tests\\": "tests/"
+        }
+    }
+}

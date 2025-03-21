@@ -1,0 +1,30 @@
+.sw-order-detail-details {
+  &.ach-echeck-payment,
+  &.cc-payment {
+    .sw-order-address.sw-order-detail-details__billing-address,
+    .sw-order-address.sw-order-detail-details__shipping-address, 
+    .sw-order-address.sw-order-detail-details__billing-address *,
+    .sw-order-address.sw-order-detail-details__shipping-address * { 
+        pointer-events: none !important;
+    }
+
+      .sw-field.sw-block-field.sw-field--default.sw-contextual-field.sw-field--number.sw-order-detail-details__shipping-cost input {
+          pointer-events: none !important;
+      }
+
+      .sw-field.sw-order-detail-details__email input,
+      .sw-field.sw-order-detail-details__phone-number input {
+          pointer-events: none !important;
+      }
+
+      .sw-field.sw-order-detail-details__affiliate-code input,
+      .sw-field.sw-order-detail-details__campaign-code input {
+          pointer-events: none !important;
+      }
+
+      .sw-order-promotion-field.sw-order-detail-details__promotion,
+      .sw-order-promotion-field.sw-order-detail-details__promotion * {
+          pointer-events: none !important;
+      }
+  }
+}

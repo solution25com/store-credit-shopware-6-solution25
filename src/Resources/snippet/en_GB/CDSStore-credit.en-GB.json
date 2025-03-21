@@ -1,0 +1,9 @@
+{
+  "store-credit": {
+    "title": "Store Credit",
+    "description": "Store Credit Balance",
+    "label": "Enter Amount to Apply as Discount",
+    "amount-alert": "The amount exceeds the maximum allowed credit for order.",
+    "button": "Apply Credit"
+  }
+}
