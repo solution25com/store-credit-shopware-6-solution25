@@ -9,7 +9,6 @@ The Store Credit Plugin allows administrators to manage store credits for custom
 ### Key Features
 - **Store Credit Management**:Admins can add, remove, and adjust store credit for customers.
 - **Partial Usage**: Customers can use store credit across multiple orders until exhausted.
-- **Per-Order Credit Limit** Admins can set a maximum amount of store credit usage per order (e.g., 50 euros).
 - **Smooth Checkout Integration** Customers can apply store credit at checkout alongside other payment methods.
 - **Transaction History**: Customers and admins can view a history of store credit transactions.
 
