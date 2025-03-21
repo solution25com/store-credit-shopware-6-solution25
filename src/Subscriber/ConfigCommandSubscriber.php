@@ -18,7 +18,7 @@ class ConfigCommandSubscriber implements EventSubscriberInterface
     public function __construct(ContainerCommandLoader $commandLoader, LoggerInterface $logger)
     {
         $this->commandLoader = $commandLoader;
-        $this->logger = $logger;
+        $this->logger        = $logger;
     }
 
     public static function getSubscribedEvents(): array
@@ -37,8 +37,8 @@ class ConfigCommandSubscriber implements EventSubscriberInterface
 
         try {
             $command = $this->commandLoader->get('store-credit:install-order-state');
-            $input = new ArrayInput([]);
-            $output = new BufferedOutput();
+            $input   = new ArrayInput([]);
+            $output  = new BufferedOutput();
 
             $result = $command->run($input, $output);
             if ($result === Command::SUCCESS) {

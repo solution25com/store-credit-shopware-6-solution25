@@ -1,11 +1,12 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace StoreCredit\Subscriber;
 
 use Shopware\Core\Checkout\Cart\Event\CheckoutOrderPlacedEvent;
 use StoreCredit\Service\StoreCreditManager;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-
 
 class CartSubscriber implements EventSubscriberInterface
 {
@@ -27,9 +28,9 @@ class CartSubscriber implements EventSubscriberInterface
 
     public function onOrderPlaced(CheckoutOrderPlacedEvent $event): void
     {
-        $order = $event->getOrder();
+        $order      = $event->getOrder();
         $customerId = $order->getOrderCustomer()->getCustomerId();
-        $orderId = $order->getId();
+        $orderId    = $order->getId();
         $currencyId = $order->getCurrencyId();
 
         $orderLineItems = $order->getLineItems();
@@ -68,6 +69,3 @@ class CartSubscriber implements EventSubscriberInterface
         }
     }
 }
-
-
-

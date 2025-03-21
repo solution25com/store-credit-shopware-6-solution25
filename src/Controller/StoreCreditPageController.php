@@ -2,7 +2,6 @@
 
 namespace StoreCredit\Controller;
 
-
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
@@ -11,7 +10,6 @@ use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Shopware\Storefront\Controller\StorefrontController;
-
 
 #[Route(defaults: ['_routeScope' => ['storefront']])]
 class StoreCreditPageController extends StorefrontController
@@ -23,7 +21,7 @@ class StoreCreditPageController extends StorefrontController
 
     public function __construct(EntityRepository $storeCreditRepository, EntityRepository $storeCreditHistoryRepository)
     {
-        $this->storeCreditRepository = $storeCreditRepository;
+        $this->storeCreditRepository        = $storeCreditRepository;
         $this->storeCreditHistoryRepository = $storeCreditHistoryRepository;
     }
 
@@ -39,7 +37,7 @@ class StoreCreditPageController extends StorefrontController
         $criteria = new Criteria();
         $criteria->addFilter(new EqualsFilter('customerId', $customerId));
         $storeCreditResult = $this->storeCreditRepository->search($criteria, $context->getContext());
-        $storeCredit = $storeCreditResult->first();
+        $storeCredit       = $storeCreditResult->first();
 
         $historyCriteria = new Criteria();
         $historyCriteria->addSorting(new FieldSorting('createdAt', 'DESC'));
@@ -47,7 +45,7 @@ class StoreCreditPageController extends StorefrontController
         $storeCreditsHistory = $this->storeCreditHistoryRepository->search($historyCriteria, $context->getContext())->getElements();
 
         return $this->renderStorefront('@StoreCredit/storefront/page/account/store-credit.html.twig', [
-            'storeCredit' => $storeCredit,
+            'storeCredit'         => $storeCredit,
             'storeCreditsHistory' => $storeCreditsHistory
         ]);
     }

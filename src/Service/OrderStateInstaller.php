@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace StoreCredit\Service;
 
@@ -11,19 +13,19 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\OrFilter;
 class OrderStateInstaller
 {
     private const STATE_MACHINE_TECHNICAL_NAME = "order_return.state";
-    private const NEW_STATE_TECHNICAL_NAME = "store_credit";
-    private const NEW_STATE_NAME = "Refund as Store Credits";
+    private const NEW_STATE_TECHNICAL_NAME     = "store_credit";
+    private const NEW_STATE_NAME               = "Refund as Store Credits";
 
     private const TRANSITIONS = [
         [
             'actionName' => 'mark_as_store_credit',
-            'from' => 'open',
-            'to' => 'store_credit',
+            'from'       => 'open',
+            'to'         => 'store_credit',
         ],
         [
             'actionName' => 'mark_as_open',
-            'from' => 'store_credit',
-            'to' => 'open',
+            'from'       => 'store_credit',
+            'to'         => 'open',
         ],
     ];
 
@@ -48,8 +50,8 @@ class OrderStateInstaller
                 $this->stateMachineStateRepository->upsert(
                     [
                         [
-                            "technicalName" => self::NEW_STATE_TECHNICAL_NAME,
-                            "name" => self::NEW_STATE_NAME,
+                            "technicalName"  => self::NEW_STATE_TECHNICAL_NAME,
+                            "name"           => self::NEW_STATE_NAME,
                             "stateMachineId" => $stateMachineId,
                         ],
                     ],
@@ -57,7 +59,7 @@ class OrderStateInstaller
                 );
             }
 
-            $transitions = $this->buildTransitions($stateMachineId, $context);
+            $transitions         = $this->buildTransitions($stateMachineId, $context);
             $existingTransitions = $this->getExistingTransitions($transitions, $context);
 
             $newTransitions = array_filter($transitions, function ($transition) use ($existingTransitions) {
@@ -130,7 +132,7 @@ class OrderStateInstaller
         $transitions = [];
         foreach (self::TRANSITIONS as $transition) {
             $transitions[] = [
-                "actionName" => $transition["actionName"],
+                "actionName"  => $transition["actionName"],
                 "fromStateId" => $this->getStateId(
                     $transition["from"],
                     $stateMachineId,
@@ -207,7 +209,8 @@ class OrderStateInstaller
             );
         }
     }
-    private function stateExists(string $stateMachineId, Context $context): bool {
+    private function stateExists(string $stateMachineId, Context $context): bool
+    {
         $criteria = new Criteria();
         $criteria->addFilter(new EqualsFilter("technicalName", self::NEW_STATE_TECHNICAL_NAME));
         $criteria->addFilter(new EqualsFilter("stateMachineId", $stateMachineId));
@@ -215,13 +218,14 @@ class OrderStateInstaller
         return $state !== null;
     }
 
-    private function getExistingTransitions(array $transitions, Context $context): array {
+    private function getExistingTransitions(array $transitions, Context $context): array
+    {
         $criteria = new Criteria();
         $criteria->addFilter(new EqualsFilter("stateMachineId", $transitions[0]['stateMachineId']));
         $existingTransitions = $this->stateMachineTransitionRepository->search($criteria, $context);
 
         return array_map(
-            fn($transition) => $transition->getActionName(),
+            fn ($transition) => $transition->getActionName(),
             $existingTransitions->getElements()
         );
     }

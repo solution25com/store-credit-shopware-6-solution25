@@ -6,7 +6,8 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityCollection;
 
 class StoreCreditCollection extends EntityCollection
 {
-    protected function getExpectedClass(): string{
+    protected function getExpectedClass(): string
+    {
         return StoreCreditEntity::class;
     }
 }

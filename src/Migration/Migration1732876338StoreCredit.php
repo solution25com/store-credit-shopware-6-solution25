@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace StoreCredit\Migration;
 
@@ -38,6 +40,5 @@ class Migration1732876338StoreCredit extends MigrationStep
             ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ");
-
     }
 }

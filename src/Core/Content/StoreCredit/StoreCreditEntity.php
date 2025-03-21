@@ -38,35 +38,43 @@ class StoreCreditEntity extends Entity
      */
     protected $updatedAt;
 
-    public function getId(): string{
+    public function getId(): string
+    {
         return $this->id;
     }
 
-    public function setId(string $id): void{
+    public function setId(string $id): void
+    {
         $this->id = $id;
     }
 
-    public function getCustomerId(): string{
+    public function getCustomerId(): string
+    {
         return $this->customerId;
     }
 
-    public function setCustomerId(string $customerId): void{
+    public function setCustomerId(string $customerId): void
+    {
         $this->customerId = $customerId;
     }
 
-    public function getCurrencyId(): ?string {
+    public function getCurrencyId(): ?string
+    {
         return $this->currencyId;
     }
 
-    public function setCurrencyId(?string $currencyId): void {
+    public function setCurrencyId(?string $currencyId): void
+    {
         $this->currencyId = $currencyId;
     }
 
-    public function getBalance(): float{
+    public function getBalance(): float
+    {
         return $this->balance;
     }
 
-    public function setBalance(float $balance): void{
+    public function setBalance(float $balance): void
+    {
         $this->balance = $balance;
     }
 

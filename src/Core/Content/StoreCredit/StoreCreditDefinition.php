@@ -16,19 +16,23 @@ use Shopware\Core\Framework\DataAbstractionLayer\FieldCollection;
 
 class StoreCreditDefinition extends EntityDefinition
 {
-    public function getEntityName(): string{
+    public function getEntityName(): string
+    {
         return 'store_credit';
     }
 
-    public function getEntityClass(): string{
+    public function getEntityClass(): string
+    {
         return StoreCreditEntity::class;
     }
 
-    public function getCollectionClass(): string{
+    public function getCollectionClass(): string
+    {
         return StoreCreditCollection::class;
     }
 
-    protected function defineFields(): FieldCollection{
+    protected function defineFields(): FieldCollection
+    {
         return new FieldCollection([
             (new IdField('id', 'id'))->addFlags(new PrimaryKey(), new Required()),
             (new FkField('customer_id', 'customerId', CustomerDefinition::class, 'id'))->addFlags(new Required()),
@@ -40,5 +44,4 @@ class StoreCreditDefinition extends EntityDefinition
             new OneToOneAssociationField('customer', 'customer_id', 'id', CustomerDefinition::class),
         ]);
     }
-
 }

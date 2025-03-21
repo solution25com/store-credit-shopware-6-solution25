@@ -17,7 +17,7 @@ class StoreCreditManager
         EntityRepository $storeCreditRepository,
         EntityRepository $storeCreditHistoryRepository,
     ) {
-        $this->storeCreditRepository = $storeCreditRepository;
+        $this->storeCreditRepository        = $storeCreditRepository;
         $this->storeCreditHistoryRepository = $storeCreditHistoryRepository;
     }
 
@@ -29,23 +29,23 @@ class StoreCreditManager
 
         if ($storeCreditId) {
             $currentBalance = $this->getCreditBalance($customerId)['balanceAmount'];
-            $newBalance = $currentBalance + $amount;
+            $newBalance     = $currentBalance + $amount;
 
             $this->storeCreditRepository->update([
                 [
-                    'id' => $storeCreditId,
-                    'balance' => $newBalance,
+                    'id'         => $storeCreditId,
+                    'balance'    => $newBalance,
                     'currencyId' => $currencyId,
-                    'updatedAt' => (new \DateTime())->format('Y-m-d H:i:s'),
+                    'updatedAt'  => (new \DateTime())->format('Y-m-d H:i:s'),
                 ]
             ], $context);
         } else {
             $storeCreditId = Uuid::randomHex();
             $this->storeCreditRepository->create([
                 [
-                    'id' => $storeCreditId,
+                    'id'         => $storeCreditId,
                     'customerId' => $customerId,
-                    'balance' => $amount,
+                    'balance'    => $amount,
                     'currencyId' => $currencyId,
                 ]
             ], $context);
@@ -54,14 +54,14 @@ class StoreCreditManager
         $historyId = Uuid::randomHex();
         $this->storeCreditHistoryRepository->create([
             [
-                'id' => $historyId,
+                'id'            => $historyId,
                 'storeCreditId' => $storeCreditId,
-                'orderId' => $orderId,
-                'amount' => $amount,
-                'currencyId' => $currencyId,
-                'reason' => $reason ?: 'Not specified',
-                'actionType' => 'add',
-                'createdAt' => (new \DateTime())->format('Y-m-d H:i:s.u'),
+                'orderId'       => $orderId,
+                'amount'        => $amount,
+                'currencyId'    => $currencyId,
+                'reason'        => $reason ?: 'Not specified',
+                'actionType'    => 'add',
+                'createdAt'     => (new \DateTime())->format('Y-m-d H:i:s.u'),
             ]
         ], $context);
 
@@ -76,36 +76,33 @@ class StoreCreditManager
             $currentBalance = $this->getCreditBalance($customerId)['balanceAmount'];
 
             if (!($currentBalance < $amount)) {
+                $newBalance = $currentBalance - $amount;
 
-            $newBalance = $currentBalance - $amount;
+                $this->storeCreditRepository->update([
+                    [
+                        'id'         => $storeCreditId,
+                        'balance'    => $newBalance,
+                        'currencyId' => $currencyId,
+                        'updatedAt'  => (new \DateTime())->format('Y-m-d H:i:s'),
+                    ]
+                ], Context::createDefaultContext());
 
-            $this->storeCreditRepository->update([
-                [
-                    'id' => $storeCreditId,
-                    'balance' => $newBalance,
-                    'currencyId' => $currencyId,
-                    'updatedAt' => (new \DateTime())->format('Y-m-d H:i:s'),
-                ]
-            ], Context::createDefaultContext());
-
-            $historyId = Uuid::randomHex();
-            $this->storeCreditHistoryRepository->create([
-                [
-                    'id' => $historyId,
-                    'storeCreditId' => $storeCreditId,
-                    'orderId' => $orderId,
-                    'amount' => $amount,
-                    'currencyId' => $currencyId,
-                    'reason' => $reason ?: 'Not specified',
-                    'actionType' => 'deduct',
-                    'createdAt' => (new \DateTime())->format('Y-m-d H:i:s.u'),
-                ]
-            ], Context::createDefaultContext());
-            return $historyId;
+                $historyId = Uuid::randomHex();
+                $this->storeCreditHistoryRepository->create([
+                    [
+                        'id'            => $historyId,
+                        'storeCreditId' => $storeCreditId,
+                        'orderId'       => $orderId,
+                        'amount'        => $amount,
+                        'currencyId'    => $currencyId,
+                        'reason'        => $reason ?: 'Not specified',
+                        'actionType'    => 'deduct',
+                        'createdAt'     => (new \DateTime())->format('Y-m-d H:i:s.u'),
+                    ]
+                ], Context::createDefaultContext());
+                return $historyId;
+            }
         }
-
-
-    }
         return('No store credit found for this customer or insufficient store credit balance.');
     }
     public function getCreditBalance(string $customerId): array
@@ -117,7 +114,7 @@ class StoreCreditManager
         $storeCreditEntity = $result->first();
 
         return [
-            'balanceAmount' => $storeCreditEntity ? $storeCreditEntity->get('balance') : 0.0,
+            'balanceAmount'     => $storeCreditEntity ? $storeCreditEntity->get('balance') : 0.0,
             'balanceCurrencyId' => $storeCreditEntity ? $storeCreditEntity->get('currencyId') : null,
         ];
     }

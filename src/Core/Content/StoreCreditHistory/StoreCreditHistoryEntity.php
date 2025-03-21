@@ -7,7 +7,6 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityIdTrait;
 
 class StoreCreditHistoryEntity extends Entity
 {
-
     use EntityIdTrait;
 
     /**
@@ -56,58 +55,72 @@ class StoreCreditHistoryEntity extends Entity
     protected $updatedAt;
 
 
-    public function getId(): string{
+    public function getId(): string
+    {
         return $this->id;
     }
 
-    public function setId(string $id): void{
+    public function setId(string $id): void
+    {
         $this->id = $id;
     }
 
-    public function getStoreCreditId(): string{
+    public function getStoreCreditId(): string
+    {
         return $this->storeCreditId;
     }
 
-    public function setStoreCreditId(string $storeCreditId): void{
+    public function setStoreCreditId(string $storeCreditId): void
+    {
         $this->storeCreditId = $storeCreditId;
     }
 
-    public function getOrderId(): ?string {
+    public function getOrderId(): ?string
+    {
         return $this->orderId;
     }
 
-    public function setOrderId(?string $orderId): void {
+    public function setOrderId(?string $orderId): void
+    {
         $this->orderId = $orderId;
     }
-    public function getCurrencyId(): ?string {
+    public function getCurrencyId(): ?string
+    {
         return $this->currencyId;
     }
 
-    public function setCurrencyId(?string $currencyId): void {
+    public function setCurrencyId(?string $currencyId): void
+    {
         $this->currencyId = $currencyId;
     }
 
-    public function getAmount(): float{
+    public function getAmount(): float
+    {
         return $this->amount;
     }
 
-    public function setAmount(float $amount): void{
+    public function setAmount(float $amount): void
+    {
         $this->amount = $amount;
     }
 
-    public function getReason(): string{
+    public function getReason(): string
+    {
         return $this->reason;
     }
 
-    public function setReason(string $reason): void{
+    public function setReason(string $reason): void
+    {
         $this->reason = $reason;
     }
 
-    public function getActionType(): string{
+    public function getActionType(): string
+    {
         return $this->actionType;
     }
 
-    public function setActionType(string $actionType): void{
+    public function setActionType(string $actionType): void
+    {
         $this->actionType = $actionType;
     }
 
@@ -130,5 +143,4 @@ class StoreCreditHistoryEntity extends Entity
     {
         $this->updatedAt = $updatedAt;
     }
-
 }

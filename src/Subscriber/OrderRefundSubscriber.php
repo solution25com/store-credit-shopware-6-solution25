@@ -21,9 +21,8 @@ class OrderRefundSubscriber implements EventSubscriberInterface
         EntityRepository $orderRepository,
         EntityRepository $orderReturnRepository,
         StoreCreditController $storeCreditController,
-    )
-    {
-        $this->orderRepository = $orderRepository;
+    ) {
+        $this->orderRepository       = $orderRepository;
         $this->orderReturnRepository = $orderReturnRepository;
         $this->storeCreditController = $storeCreditController;
     }
@@ -44,11 +43,11 @@ class OrderRefundSubscriber implements EventSubscriberInterface
         $criteria->addAssociation('lineItems');
         $criteria->addAssociation('transactions.paymentMethod');
         $criteria->addAssociation('transactions.stateMachineState');
-        $order = $this->orderRepository->search($criteria, $context)->last();
+        $order        = $this->orderRepository->search($criteria, $context)->last();
         $paymentState = $order->getTransactions()->last()?->getStateMachineState()?->getTechnicalName();
 
         if (!$order || $paymentState !== 'paid') {
-         return;
+            return;
         }
 
         $returnCriteria = new Criteria();
@@ -59,14 +58,14 @@ class OrderRefundSubscriber implements EventSubscriberInterface
         $returnLineItemData = [];
 
         if ($orderReturn) {
-            $returnLineItems = $orderReturn->getLineItems();
+            $returnLineItems    = $orderReturn->getLineItems();
             $returnLineItemData = $returnLineItems->map(function ($lineItem) {
                 $associatedLineItem = $lineItem->getLineItem();
                 return [
-                    'id' => $lineItem->getId(),
-                    'name' => $associatedLineItem ? $associatedLineItem->getLabel() : 'Unknown',
+                    'id'       => $lineItem->getId(),
+                    'name'     => $associatedLineItem ? $associatedLineItem->getLabel() : 'Unknown',
                     'quantity' => $lineItem->getQuantity(),
-                    'price' => $lineItem->getPrice()->getTotalPrice(),
+                    'price'    => $lineItem->getPrice()->getTotalPrice(),
                 ];
             });
         }
@@ -78,10 +77,10 @@ class OrderRefundSubscriber implements EventSubscriberInterface
 
         $storeCreditsReqData = [
             'customerId' => $event->getOrder()->getOrderCustomer()->getCustomerId(),
-            'orderId' => $event->getOrder()->getId(),
+            'orderId'    => $event->getOrder()->getId(),
             'currencyId' => $event->getContext()->getCurrencyId(),
-            'amount' => $totalPrice,
-            'reason' => "Refunded from order with Order Number : " . $event->getOrder()->getOrderNumber(),
+            'amount'     => $totalPrice,
+            'reason'     => "Refunded from order with Order Number : " . $event->getOrder()->getOrderNumber(),
         ];
 
         $request = new Request([], $storeCreditsReqData);

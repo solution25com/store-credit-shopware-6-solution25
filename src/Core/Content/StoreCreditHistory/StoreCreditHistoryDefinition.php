@@ -1,6 +1,6 @@
 <?php
-namespace StoreCredit\Core\Content\StoreCreditHistory;
 
+namespace StoreCredit\Core\Content\StoreCreditHistory;
 
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\Required;
 use Shopware\Core\Checkout\Order\OrderDefinition;
@@ -17,19 +17,23 @@ use StoreCredit\Core\Content\StoreCredit\StoreCreditDefinition;
 
 class StoreCreditHistoryDefinition extends EntityDefinition
 {
-    public function getEntityName(): string{
+    public function getEntityName(): string
+    {
         return 'store_credit_history';
     }
 
-    public function getEntityClass(): string{
+    public function getEntityClass(): string
+    {
         return StoreCreditHistoryEntity::class;
     }
 
-    public function getCollectionClass(): string{
+    public function getCollectionClass(): string
+    {
         return StoreCreditHistoryCollection::class;
     }
 
-    protected function defineFields(): FieldCollection{
+    protected function defineFields(): FieldCollection
+    {
         return new FieldCollection([
             (new IdField('id', 'id'))->addFlags(new PrimaryKey(), new Required()),
             (new FkField('store_credit_id', 'storeCreditId', StoreCreditDefinition::class, 'id'))->addFlags(new Required()),

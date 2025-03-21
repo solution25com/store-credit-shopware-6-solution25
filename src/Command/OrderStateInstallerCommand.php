@@ -2,13 +2,13 @@
 
 namespace StoreCredit\Command;
 
-
 use Shopware\Core\Framework\Context;
 use StoreCredit\Service\OrderStateInstaller;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+
 #[AsCommand(name: 'store-credit:install-order-state')]
 
 class OrderStateInstallerCommand extends Command

@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 namespace StoreCredit;
 
@@ -15,7 +17,6 @@ class StoreCredit extends Plugin
 {
     public function install(InstallContext $installContext): void
     {
-
     }
 
     public function uninstall(UninstallContext $uninstallContext): void
