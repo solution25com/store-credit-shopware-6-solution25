@@ -47,12 +47,15 @@ _These features work with Shopware 6.4–6.5 and future updates._
 ![Group 7983](https://github.com/user-attachments/assets/a1ac0256-5393-4f18-8fa4-858d9b8cdf92)
 
 ## Plugin Configuration
-
+1. **Access Plugin Settings**
 - Go to Settings > System > Plugins.
 - Locate MaxMind and click the three dots (...) icon or the plugin name to open its settings.
 
 2. **General Settings**
+<br>**1. Minimal Configuration**: After installing the Store Credit Plugin, you need to enable the **Store Credit Refund Type** in the configuration. Since this plugin is related to **Swag Commercial**, the toggle should be enabled for the **Store Credit Refund Type** option to activate store credit refunds.  
 ![Group 7996](https://github.com/user-attachments/assets/85e69485-dda4-4435-ad96-f947333c736d)
+**2. Store Credit Add State**: Toggle to enable or disable the feature.  
+**3. Post Purchase Features**: Restrict store credit usage to specific products.   
 ![Group 7989](https://github.com/user-attachments/assets/de7bf485-e029-4d2f-a5bf-f7f8c0573bc6)
 
 ## How it works
@@ -97,37 +100,38 @@ Admins can manually add or deduct store credit from a customer’s account.
 
 ### API Endpoints
 **Get Store Credit Balance**
-<br>**Path**: /store-api/store-credit/balance/{customer_id}
-<br>**Method**: GET
-<br>**Purpose**: Fetches the current store credit balance of a customer.
-<br>**Response**: Returns the available credit balance.
+<br> - **Path**: /store-api/store-credit/balance/{customer_id}
+<br> - **Method**: GET
+<br> - **Purpose**: Fetches the current store credit balance of a customer.
+<br> - **Response**: Returns the available credit balance.
 
 **Add Store Credit**
-<br>**Path**: /store-api/store-credit/add
-<br>**Method**: POST
-<br>**Request Body**:
-- customer_id (string, required)
-- amount (float, required)
-- reason (string, optional) Response: Returns updated store credit details.
+<br>- **Path**: /store-api/store-credit/add
+<br>- **Method**: POST
+<br>- **Request Body**:
+      <br> - customer_id (string, required)
+      <br> - amount (float, required)
+      <br> - reason (string, optional) Response: Returns updated store credit details.
 
 **Deduct Store Credit**
-<br>**Path**: /store-api/store-credit/deduct
-<br>**Method**: POST
-<br>**Request Body**:
-- customer_id (string, required)
-- amount (decimal, required)
-- order_id (string, optional) Response: Returns updated store credit details.
+<br> - **Path**: /store-api/store-credit/deduct
+<br> - **Method**: POST
+<br>- **Request Body**:
+  <br> - customer_id (string, required)
+  <br> - amount (decimal, required)
+  <br> - order_id (string, optional) Response: Returns updated store credit details.
 
-<br>**Refund to Store Credit**
-<br>**Path**: /store-api/store-credit/add
-<br>**Method**: POST
-<br>**Request Body**:
-- order_id (string, required)
-- amount (decimal, required) Response: Refund processed and logged in credit history.
-- reason (string, optional).
+<br> - **Refund to Store Credit**
+<br> - **Path**: /store-api/store-credit/add
+<br> - **Method**: POST
+<br> - **Request Body**:
+  <br> - order_id (string, required)
+  <br> - amount (decimal, required) Response: Refund processed and logged in credit history.
+  <br> - reason (string, optional).
 
 ### Use from end-users - Checkout Integration
 - Customers can choose to apply store credit as payment during checkout.
+![Group 7995](https://github.com/user-attachments/assets/dafccdd4-8cf8-4a59-a423-bab2d86feeb8)
 
 - Partial and full store credit application supported.
 - Remaining balance is paid via an alternative payment method.
@@ -135,11 +139,77 @@ Admins can manually add or deduct store credit from a customer’s account.
 
 ## Best Practices
 
+- **Enable Store Credit Refunds**
+  - Ensure the **Store Credit Refund Type** option is activated in **Settings > System > Plugins**.
+  - Allows refunds to be issued as store credit instead of cash.
+  
+- **Set Per-Order Credit Limits**
+  - Define a maximum limit for store credit usage per order (e.g., 50 euros).
+  - Helps control how much credit can be used during checkout.
+
+- **Monitor Store Credit Transactions**
+  - Regularly check the store credit transaction logs to track customer usage.
+  - This helps to avoid errors and discrepancies.
+
+- **Inform Customers About Their Credit**
+  - Make sure customers can see their available store credit balance in their account.
+  - Send notifications when store credit is added or used.
+
+- **Test Before Going Live**
+  - Test different scenarios, such as refunds, partial payments, and store credit applications during checkout.
+  - Ensure everything functions properly before launching.
+
+- **Use API to Customize for Your Needs**
+  - Use API endpoints to customize store credit rules and integrate with other store functions.
+  - This allows for flexibility in how store credit is applied.
+
+- **Restrict Store Credit for Certain Products**
+  - If necessary, restrict store credit usage for specific products or sales channels.
+  - This ensures store credit is used where appropriate.
 
 ## Troubleshooting
 
- 
+- **Store credit is not appearing at checkout**
+  - Ensure the **Store Credit Refund Type** is activated in the plugin settings.
+  - Check if the customer has enough store credit in their account.
+
+- **Refunds not issued as store credit**
+  - Verify that the refund method is set to **Store Credit** when processing returns.
+  - Check for conflicts with other refund-related plugins.
+
+- **Customer’s store credit balance is not updating**
+  - Ensure scheduled tasks are running with the following commands:
+    ```sh
+    bin/console scheduled-task:register
+    bin/console scheduled-task:run
+    bin/console messenger:consume
+    ```
+  - Verify the store credit history is being logged in the database.
+
+- **Admins cannot modify store credit**
+  - Ensure the admin has the necessary permissions to edit customer store credit.
+  - Double-check that API calls for store credit adjustments are functioning.
+
+- **Orders not using store credit during checkout**
+  - Ensure there is no restriction on store credit for the selected products.
+  - Verify that the credit amount is within the allowed per-order limit.
+
 ## FAQ
+
+- **Is a MaxMind account required for using store credit?**  
+  - No, a MaxMind account is not required for the store credit plugin.
+
+- **Can I restrict store credit usage to specific products?**  
+  - Yes, you can restrict store credit usage for specific products or categories through the **Post Purchase Features**.
+
+- **How do I add store credit to a customer's account?**  
+  - Admins can add store credit manually through the **Customer Details** section in the admin panel.
+
+- **Can store credit expire?**  
+  - Currently, the plugin does not support automatic expiration of store credit, but this feature can be customized.
+
+- **Can customers see their store credit balance?**  
+  - Yes, customers can view their available balance and transaction history in their account settings.
 
 
 ## Wiki Documentation
