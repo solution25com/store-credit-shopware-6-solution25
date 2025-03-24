@@ -39,14 +39,14 @@ The Store Credit Plugin allows administrators to manage store credits for custom
 
 4. **Verify Installation**
 
-- After activation, you will see MaxMind in the list of installed plugins.
+- After activation, you will see Store Credit in the list of installed plugins.
 - The plugin name, version, and installation date should appear as shown in the screenshot below.
 ![Group 7983](https://github.com/user-attachments/assets/a1ac0256-5393-4f18-8fa4-858d9b8cdf92)
 
 ## Plugin Configuration
 1. **Access Plugin Settings**
 - Go to Settings > System > Plugins.
-- Locate MaxMind and click the three dots (...) icon or the plugin name to open its settings.
+- Locate Store Credit and click the three dots (...) icon or the plugin name to open its settings.
 
 2. **General Settings**
 <br>**1. Minimal Configuration**: After installing the Store Credit Plugin, you need to enable the **Store Credit Refund Type** in the configuration. Since this plugin is related to **Swag Commercial**, the toggle should be enabled for the **Store Credit Refund Type** option to activate store credit refunds.  
@@ -192,9 +192,6 @@ Admins can manually add or deduct store credit from a customer’s account.
   - Verify that the credit amount is within the allowed per-order limit.
 
 ## FAQ
-
-- **Is a MaxMind account required for using store credit?**  
-  - No, a MaxMind account is not required for the store credit plugin.
 
 - **Can I restrict store credit usage to specific products?**  
   - Yes, you can restrict store credit usage for specific products or categories through the **Post Purchase Features**.
