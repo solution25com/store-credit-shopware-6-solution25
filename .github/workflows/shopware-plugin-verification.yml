@@ -21,7 +21,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      
+      - name: Check code style
+        run: |
+          docker run --rm -v $(pwd):/ext ghcr.io/shopwarelabs/extension-verifier:latest \
+            check /ext --only php-cs-fixer --reporter github
+
       - name: Run Shopware Extension Verifier
         uses: shopware/github-actions/extension-verifier@main
         with:
