@@ -4,7 +4,7 @@
 
 ## Introduction
 
-The Store Credit Plugin allows administrators to manage store credits for customers who return products. Instead of issuing refunds, the admin can allocate store credit to the customer's account, which can be used for future purchases. The store credit can be applied over multiple orders until the allocated amount is fully utilized.
+The Store Credit Plugin allows administrators to manage store credits for customers who return products. Instead of issuing refunds, the admin can allocate store credit to the customer's account , which can be used for future purchases. The store credit can be applied over multiple orders until the allocated amount is fully utilized.
 
 ### Key Features
 - **Store Credit Management**:Admins can add, remove, and adjust store credit for customers.
