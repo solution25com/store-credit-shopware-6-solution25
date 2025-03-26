@@ -5,29 +5,41 @@ on:
     branches: [main, develop]
   push:
     tags:
-      - "v*.*.*" 
+      - "v*.*.*"
 
 jobs:
   verify-plugin:
     name: Verify Shopware Plugin
-    runs-on: ${{ matrix.os }}  
+    runs-on: ubuntu-latest 
 
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]  
         version-selection: ['lowest', 'highest']
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      
       - name: Run Shopware Extension Verifier
         uses: shopware/github-actions/extension-verifier@main
         with:
           action: check
           check-against: ${{ matrix.version-selection }}
 
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      
+      - name: Run PHP CodeSniffer
+        run: vendor/bin/phpcs --standard=PSR12 --ignore=vendor/ .
+
+      
+      - name: Run PHP-CS-Fixer
+        run: vendor/bin/php-cs-fixer fix --dry-run --diff
+
+      
       - name: Fail on Verification Errors
         if: failure()
         run: exit 1
