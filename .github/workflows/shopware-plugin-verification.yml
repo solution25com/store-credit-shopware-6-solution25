@@ -1,0 +1,33 @@
+name: Shopware Plugin Verification
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    tags:
+      - "v*.*.*" 
+
+jobs:
+  verify-plugin:
+    name: Verify Shopware Plugin
+    runs-on: ${{ matrix.os }}  
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]  
+        version-selection: ['lowest', 'highest']
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Shopware Extension Verifier
+        uses: shopware/github-actions/extension-verifier@main
+        with:
+          action: check
+          check-against: ${{ matrix.version-selection }}
+
+      - name: Fail on Verification Errors
+        if: failure()
+        run: exit 1
