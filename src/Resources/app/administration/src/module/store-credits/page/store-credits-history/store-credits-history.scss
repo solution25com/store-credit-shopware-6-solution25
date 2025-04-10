@@ -1,0 +1,38 @@
+.customer-details {
+  display: flex;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+
+  sw-button {
+    margin-right: 20px;
+    font-size: 46px;
+    height: auto;
+  }
+
+  .customer-info {
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    p {
+      margin: 5px 0 0;
+      font-size: 14px;
+      color: #555;
+    }
+  }
+  .text-success {
+    color: green;
+    font-weight: bold;
+  }
+
+  .text-danger {
+    color: red;
+    font-weight: bold;
+  }
+}

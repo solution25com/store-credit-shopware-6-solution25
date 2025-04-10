@@ -1,0 +1,11 @@
+{% sw_extends '@Storefront/storefront/page/checkout/cart/cart-summary.html.twig' %}
+
+{% block page_checkout_cart_summary %}
+
+    {{ parent() }}
+
+    <div class="store-credit-summary">
+        <p>Store Credit Balance: {{ storeCreditBalance | currency }}</p>
+    </div>
+
+{% endblock %}

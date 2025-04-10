@@ -1,0 +1,11 @@
+{% sw_extends '@Storefront/storefront/page/checkout/cart.html.twig' %}
+
+{% block page_checkout_cart_summary %}
+    {{ parent() }}
+
+    {% if context.customer and storeCreditBalance > 0 %}
+        <div class="cart-store-credit-summary">
+            <p>Your Store Credit Balance: {{ storeCreditBalance | currency }}</p>
+        </div>
+    {% endif %}
+{% endblock %}

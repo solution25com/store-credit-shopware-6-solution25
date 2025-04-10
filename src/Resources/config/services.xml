@@ -1,0 +1,110 @@
+<?xml version="1.0" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <services>
+        <service id="StoreCredit\Core\Content\StoreCredit\StoreCreditDefinition" public="true">
+            <tag name="shopware.entity.definition" entity="store_credit" />
+        </service>
+
+        <service id="StoreCredit\Core\Content\StoreCreditHistory\StoreCreditHistoryDefinition">
+            <tag name="shopware.entity.definition" entity="store_credit_history" />
+        </service>
+
+        <service id="StoreCredit\Service\StoreCreditManager">
+            <argument type="service" id="store_credit.repository"/>
+            <argument type="service" id="store_credit_history.repository"/>
+        </service>
+
+        <service id="StoreCredit\Service\OrderStateInstaller">
+            <argument type="service" id="state_machine.repository" />
+            <argument type="service" id="state_machine_state.repository" />
+            <argument type="service" id="state_machine_transition.repository" />
+            <argument type="service" id="state_machine_history.repository" />
+        </service>
+
+        <service id="StoreCredit\Controller\StoreCreditController">
+            <argument type="service" id="StoreCredit\Service\StoreCreditManager" />
+            <tag name="controller.service_arguments"/>
+        </service>
+
+        <service id="StoreCredit\Controller\StoreCreditPageController">
+            <argument type="service" id="store_credit.repository"/>
+            <argument type="service" id="store_credit_history.repository"/>
+            <tag name="controller.service_arguments"/>
+            <call method="setContainer">
+                <argument type="service" id="service_container"/>
+            </call>
+            <call method="setTwig">
+                <argument type="service" id="twig"/>
+            </call>
+        </service>
+
+        <service id="StoreCredit\Subscriber\CartSubscriber">
+                <argument type="service" id="StoreCredit\Service\StoreCreditManager"/>
+                <tag name="kernel.event_subscriber"/>
+        </service>
+
+
+
+        <service id="StoreCredit\Subscriber\OrderRefundSubscriber" public="true">
+            <argument type="service" id="order.repository" />
+            <argument type="service" id="order_return.repository" on-invalid="null"/>
+            <argument type="service" id="StoreCredit\Controller\StoreCreditController" />
+            <tag name="kernel.event_subscriber" />
+        </service>
+
+
+        <service id="StoreCredit\Storefront\Controller\CustomCheckoutController" decorates="Shopware\Storefront\Controller\CheckoutController" public="true">
+            <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
+            <argument type="service" id="Shopware\Storefront\Page\Checkout\Cart\CheckoutCartPageLoader"/>
+            <argument type="service" id="Shopware\Storefront\Page\Checkout\Confirm\CheckoutConfirmPageLoader"/>
+            <argument type="service" id="Shopware\Storefront\Page\Checkout\Finish\CheckoutFinishPageLoader"/>
+            <argument type="service" id="Shopware\Core\Checkout\Order\SalesChannel\OrderService"/>
+            <argument type="service" id="Shopware\Core\Checkout\Payment\PaymentProcessor"/>
+            <argument type="service" id="Shopware\Storefront\Page\Checkout\Offcanvas\OffcanvasCartPageLoader"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <argument type="service" id="Shopware\Core\Checkout\Customer\SalesChannel\LogoutRoute"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartLoadRoute"/>
+            <argument type="service" id="store_credit.repository"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+
+            <argument type="service" id="StoreCredit\Storefront\Controller\CustomCheckoutController.inner"/>
+
+            <call method="setContainer">
+                <argument type="service" id="service_container"/>
+            </call>
+            <call method="setTwig">
+                <argument type="service" id="twig"/>
+            </call>
+
+            <tag name="controller.service_arguments" />
+            <tag name="shopware.controller" />
+        </service>
+
+        <service id="StoreCredit\Command\OrderStateInstallerCommand">
+            <argument type="service" id="StoreCredit\Service\OrderStateInstaller"/>
+            <tag name="console.command" />
+        </service>
+
+
+        <service id="StoreCredit\Subscriber\ConfigCommandSubscriber">
+            <argument type="service" id="console.command_loader"/>
+            <argument type="service" id="logger"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="StoreCredit\Subscriber\OrderEditSubscriber">
+            <argument type="service" id="order.repository"/>
+            <argument type="service" id="Shopware\Core\System\StateMachine\StateMachineRegistry"/>
+            <argument type="service" id="Symfony\Component\EventDispatcher\EventDispatcherInterface"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <argument type="service" id="Shopware\Core\System\NumberRange\ValueGenerator\NumberRangeValueGeneratorInterface"/>
+            <argument type="service" id="Shopware\Administration\Notification\NotificationService"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+    </services>
+</container>

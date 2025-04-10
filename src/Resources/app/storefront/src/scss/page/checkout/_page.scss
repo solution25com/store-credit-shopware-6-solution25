@@ -1,0 +1,61 @@
+.cds-checkout-store-credit {
+  margin: 12px 0;
+  border-bottom: 1px solid $other-shade-color;
+
+  .cds-btn-store-credit {
+    padding-bottom: 12px;
+
+    &:hover {
+      text-decoration: none;
+    }
+
+    .icon {
+      width: 14px;
+
+      path {
+        fill: transparent;
+      }
+    }
+
+    p {
+      color: $second-basic-color;
+      font-size: 14px;
+      font-style: normal;
+      font-weight: 600;
+      line-height: 20px;
+    }
+  }
+
+  .cds-store-credit-card-body {
+    .store-credit-balance {
+      font-size: 12px;
+      font-style: normal;
+      font-weight: 400;
+      line-height: 15px;
+      padding-bottom: 6px;
+    }
+
+    #store-credit-form {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+
+      .form-group {
+        flex: 1 1 auto;
+
+        .form-control {
+          border-top-left-radius: 4px;
+          border-bottom-left-radius: 4px;
+        }
+
+        #exceedCreditMessage {
+          padding-top: 4px;
+        }
+      }
+
+      button {
+        height: 46px;
+      }
+    }
+  }
+}

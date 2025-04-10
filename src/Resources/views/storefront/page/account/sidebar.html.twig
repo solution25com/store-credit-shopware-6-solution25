@@ -1,0 +1,13 @@
+{% sw_extends '@Storefront/storefront/page/account/sidebar.html.twig' %}
+
+{% block page_account_sidebar_menu_inner %}
+    {{ parent() }}
+
+    {% block page_account_sidebar_link_store_credit %}
+        <a href="{{ path('frontend.account.store-credit.page') }}"
+           title="{{ 'account.storeCreditLink'|trans|striptags }}"
+           class="list-group-item list-group-item-action account-aside-item{% if activeRoute is same as('frontend.account.store-credit.page') %} is-active{% endif %}">
+            Store Credits
+        </a>
+    {% endblock %}
+{% endblock %}

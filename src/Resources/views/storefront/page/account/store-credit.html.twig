@@ -1,0 +1,83 @@
+{% sw_extends '@Storefront/storefront/page/account/_page.html.twig' %}
+
+{% block base_content %}
+    {% block page_account %}
+        <div class="account account-content row">
+            {% block page_account_sidebar %}
+                <div class="account-content-aside col-lg-3 col-xl-2 d-none d-lg-block">
+                    {% if context.customer and not context.customer.guest %}
+                        {% sw_include '@Storefront/storefront/page/account/sidebar.html.twig' %}
+                    {% endif %}
+                </div>
+                <div class="d-lg-none user-dash-sidebar">
+                    <div class="accordion" id="accountSidebarAccordion">
+                        <div class="accordion-item" data-sidebar-tab-name-plugin>
+                            <h2 class="accordion-header" id="accountSidebarHeading">
+                                <button class="accordion-button collapsed text-white" type="button"
+                                        data-bs-toggle="collapse" data-bs-target="#accountSidebarCollapse"
+                                        aria-expanded="false" aria-controls="accountSidebarCollapse">
+                                    <span id="sidebar-tab-name"></span>
+                                </button>
+                            </h2>
+                            <div id="accountSidebarCollapse" class="accordion-collapse collapse"
+                                 aria-labelledby="accountSidebarHeading" data-bs-parent="#accountSidebarAccordion">
+                                <div class="accordion-body">
+                                    {% if context.customer and not context.customer.guest %}
+                                        {% sw_include '@Storefront/storefront/page/account/sidebar.html.twig' %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endblock %}
+
+            {% block page_account_main %}
+                <div class="account-content-main col-lg-9 offset-xl-1 col-xl-9">
+
+                    {% block page_account_main_content %}
+                        <div class="account-welcome b2b-create-title-text">
+                            <input type="hidden" name="parentname" value="Store Credits">
+                        <h2>Store Credits</h2>
+                        </div>
+                        <p>Balance: {{ storeCredit.balance|currency }}</p>
+
+                        {% if storeCreditsHistory|length > 0 %}
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Credit Amount</th>
+                                    <th>Reason</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for credit in storeCreditsHistory %}
+                                    <tr>
+                                        <td>{{ credit.createdAt|date('Y-m-d H:i') }}</td>
+                                        <td>
+                                            {% if credit.actionType == 'add' %}
+                                                +{{ credit.amount|currency }}
+                                            {% elseif credit.actionType == 'deduct' %}
+                                                -{{ credit.amount|currency }}
+                                            {% else %}
+                                                {{ credit.amount|currency }}
+                                            {% endif %}
+                                        </td>
+
+                                        <td>
+                                            {{ credit.reason | default('Not specified') }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <p>No store credits history found.</p>
+                        {% endif %}
+                    {% endblock %}
+                </div>
+            {% endblock %}
+        </div>
+    {% endblock %}
+{% endblock %}
