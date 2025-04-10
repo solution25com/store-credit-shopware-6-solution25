@@ -1,4 +1,4 @@
-![Store Credit](https://github.com/user-attachments/assets/7f150cc7-e70d-418f-8d5e-519d254f44ac)
+![1](https://github.com/user-attachments/assets/bb12d407-d013-41dd-b97e-c3d08112c054)
 
 # Store Credit
 
@@ -41,7 +41,7 @@ The Store Credit Plugin allows administrators to manage store credits for custom
 
 - After activation, you will see Store Credit in the list of installed plugins.
 - The plugin name, version, and installation date should appear as shown in the screenshot below.
-![Group 7983](https://github.com/user-attachments/assets/a1ac0256-5393-4f18-8fa4-858d9b8cdf92)
+![2](https://github.com/user-attachments/assets/ee52304c-21f8-42a8-9f12-a90287bc1327)
 
 ## Plugin Configuration
 1. **Access Plugin Settings**
@@ -50,25 +50,26 @@ The Store Credit Plugin allows administrators to manage store credits for custom
 
 2. **General Settings**
 <br>**1. Minimal Configuration**: After installing the Store Credit Plugin, you need to enable the **Store Credit Refund Type** in the configuration. Since this plugin is related to **Swag Commercial**, the toggle should be enabled for the **Store Credit Refund Type** option to activate store credit refunds.  
-![Group 7996](https://github.com/user-attachments/assets/85e69485-dda4-4435-ad96-f947333c736d)
+![3](https://github.com/user-attachments/assets/1b9a2531-5ce2-4c69-95ff-bcf934d5375f)
+
 **2. Store Credit Add State**: Toggle to enable or disable the feature.  
 **3. Post Purchase Features**: Restrict store credit usage to specific products.   
-![Group 7989](https://github.com/user-attachments/assets/de7bf485-e029-4d2f-a5bf-f7f8c0573bc6)
+![4](https://github.com/user-attachments/assets/6c0da891-9f8d-4f72-bb91-1379a1862491)
 
 ## How it works
 After installing and enabling the plugin in the admin panel, customers can view their available balance and transaction history in their profile account settings on the storefront.
-![Group 7991](https://github.com/user-attachments/assets/090960b8-2756-4b59-8b65-440e11073479)
+![5](https://github.com/user-attachments/assets/5005aaea-4109-4b3f-bff8-b1bf9b268b3c)
 
 Admins can manually add or deduct store credit from a customer’s account.
-![Group 7992](https://github.com/user-attachments/assets/7bbed30d-f251-48d1-8af3-b5f1ea7b3f27)
-![Group 7993](https://github.com/user-attachments/assets/30fb4e3b-a585-4245-a99d-f7c9e4ecf931)
+![6](https://github.com/user-attachments/assets/1486cb7b-b82f-4817-b958-038283332661)
+![7](https://github.com/user-attachments/assets/ec63a465-a4e7-49b5-a5e4-985c95676857)
 
 ### Refunds & Credit Memo Workflow
 - When processing a return, select the "Refund as Store Credit" option.
 - The refunded amount is added to the customer's store credit balance.
 - Customers can use the store credit for future purchases.
 - All transactions are logged in the store_credit_history table for tracking.
-![Group 7994](https://github.com/user-attachments/assets/43b0c962-9eb8-4570-8e23-38671214c006)
+![8](https://github.com/user-attachments/assets/1e6d6251-8579-4d66-9dfe-466993b49583)
 
 ### Refunds & Store Credit Management
 #### Partial & Full Refunds:
@@ -128,7 +129,7 @@ Admins can manually add or deduct store credit from a customer’s account.
 
 ### Use from end-users - Checkout Integration
 - Customers can choose to apply store credit as payment during checkout.
-![Group 7995](https://github.com/user-attachments/assets/dafccdd4-8cf8-4a59-a423-bab2d86feeb8)
+![9](https://github.com/user-attachments/assets/02ec29e2-17b6-4f25-9b9c-fd8a387c2b7b)
 
 - Partial and full store credit application supported.
 - Remaining balance is paid via an alternative payment method.
