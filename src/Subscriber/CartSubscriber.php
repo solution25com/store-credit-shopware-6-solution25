@@ -52,20 +52,5 @@ class CartSubscriber implements EventSubscriberInterface
                 'Store credit used for order payment'
             );
         }
-        if ($storeCreditLineItem) {
-            $amountToDeduct = abs($storeCreditLineItem->getTotalPrice());
-
-            $customerBalance = $this->storeCreditManager->getCreditBalance($customerId)['balanceAmount'];
-
-
-
-            $this->storeCreditManager->deductCredit(
-                $customerId,
-                $amountToDeduct,
-                $orderId,
-                $currencyId,
-                'Store credit used for order payment'
-            );
-        }
     }
 }
