@@ -135,6 +135,150 @@ Admins can manually add or deduct store credit from a customer’s account.
 - Remaining balance is paid via an alternative payment method.
 - When an admin creates an order he can use the store credits of the customer he chooses, first you add the product in admin order creation, then you add another line item as credit and you use the specific name “Store credit discount“.
 
+# Store Credit Plugin - API Documentation
+ 
+This document describes the API endpoints provided by the Store Credit Plugin for Shopware 6. These endpoints allow authorized users to manage store credits for customers and apply store credits during checkout.
+ 
+---
+ 
+## Add Store Credit
+ 
+**Endpoint**  
+`POST /api/store-credit/add`
+ 
+### Description
+ 
+Adds a store credit amount to a specific customer’s balance. This can optionally be linked to an order and currency.
+ 
+### Request Headers
+ 
+```
+Authorization: Bearer <your-access-token>
+Content-Type: application/json
+```
+ 
+### Example Request Body
+ 
+```json
+{
+  "customerId": "3c2a178f96b7345ad27051c34609e52",
+  "amount": 50.0,
+  "reason": "Manual admin adjustment"
+}
+```
+ 
+### Successful Response
+ 
+```json
+{
+  "success": true,
+  "historyId": "f84b5a7a4fce4a1db9d693c8be304a1e"
+}
+```
+ 
+### Example Error Response
+ 
+```json
+{
+  "success": false,
+  "message": "Customer ID is missing."
+}
+```
+ 
+---
+ 
+## Deduct Store Credit
+ 
+**Endpoint**  
+`POST /api/store-credit/deduct`
+ 
+### Description
+ 
+Deducts a store credit amount from a customer’s balance. The deduction can include a reason for logging purposes.
+ 
+### Request Headers
+ 
+```
+Authorization: Bearer <your-access-token>
+Content-Type: application/json
+```
+ 
+### Example Request Body
+ 
+```json
+{
+  "customerId": "3c2a178f96b7345ad27051c34609e52",
+  "amount": 20.0,
+  "reason": "Refund adjustment"
+}
+```
+ 
+### Successful Response
+ 
+```json
+{
+  "success": true,
+  "historyId": "a9d2554b0ce847cd82f3ac9bd1c0aa2f"
+}
+```
+ 
+### Example Error Response
+ 
+```json
+{
+  "success": false,
+  "message": "Amount exceeds the maximum allowed credit for order."
+}
+```
+ 
+---
+ 
+## Get Store Credit Balance
+ 
+**Endpoint**  
+`GET /api/store-credit/balance`
+ 
+### Description
+ 
+Retrieves the current store credit balance for a customer.
+ 
+### Request Headers
+ 
+```
+Authorization: Bearer <your-access-token>
+```
+ 
+### Example Request
+ 
+```
+GET /api/store-credit/balance?customerId=3c2a178f96b7345ad27051c309e52
+```
+ 
+### Successful Response
+ 
+```json
+{
+  "success": true,
+  "balance": 80.0,
+  "currencyId": "b7d2554b0ce847cd82f3ac9bd1c0dfca"
+}
+```
+ 
+### Example Error Response
+ 
+```json
+{
+  "success": false,
+  "message": "Customer not found."
+}
+```
+ 
+---
+ 
+## Authentication Note
+ 
+These endpoints are protected and require a Bearer token obtained through the Shopware Admin API.
+
 ## Best Practices
 
 - **Enable Store Credit Refunds**
