@@ -22,112 +22,248 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route(defaults: ['_routeScope' => ['storefront']])]
 class StoreCreditApplyController extends StorefrontController
 {
-    private CartService $cartService;
-    private EntityRepository $storeCreditRepository;
-    private SystemConfigService $systemConfigurationService;
-    private string $storeCreditLineItemId = 'store-credit-discount';
+  private CartService $cartService;
+  private EntityRepository $storeCreditRepository;
+  private SystemConfigService $systemConfigurationService;
+  private string $storeCreditLineItemId = 'store-credit-discount';
 
-    public function __construct(
-        CartService $cartService,
-        EntityRepository $storeCreditRepository,
-        SystemConfigService $systemConfigurationService
-    ) {
-        $this->cartService = $cartService;
-        $this->storeCreditRepository = $storeCreditRepository;
-        $this->systemConfigurationService = $systemConfigurationService;
+  public function __construct(
+    CartService $cartService,
+    EntityRepository $storeCreditRepository,
+    SystemConfigService $systemConfigurationService
+  ) {
+    $this->cartService = $cartService;
+    $this->storeCreditRepository = $storeCreditRepository;
+    $this->systemConfigurationService = $systemConfigurationService;
+  }
+
+  #[Route(path: '/store-credit-apply', name: 'frontend.store.credit.apply', defaults: ['_routeScope' => ['storefront']], methods: ['POST'])]
+  public function applyStoreCredit(Request $request, SalesChannelContext $context): Response
+  {
+    $amount = (float)$request->get('amount');
+    $customer = $context->getCustomer();
+
+    if (!$customer || $amount <= 0) {
+      $this->addFlash('danger', 'Invalid amount or customer not logged in.');
+      return new RedirectResponse($this->generateUrl('frontend.checkout.confirm.page'));
     }
 
-    #[Route(path: '/store-credit-apply', name: 'frontend.store.credit.apply', defaults: ['_routeScope' => ['storefront']], methods: ['POST'])]
-    public function applyStoreCredit(Request $request, SalesChannelContext $context): Response
-    {
-        $amount = (float)$request->get('amount');
-        $customer = $context->getCustomer();
+    if ($restrictedProducts = $this->hasRestrictedProductsInCart($context)) {
+      $productNames = array_map(
+        static fn ($product) => '<strong>' . htmlspecialchars($product['name'], ENT_QUOTES) . '</strong>',
+        $restrictedProducts
+      );
+      $this->addFlash(
+        'warning',
+        'Store credit cannot be applied due to restricted products in the cart: ' . implode(', ', $productNames)
+      );
+      return new RedirectResponse($this->generateUrl('frontend.checkout.confirm.page'));
+    }
 
-        if (!$customer || $amount <= 0) {
-            $this->addFlash('danger', 'Invalid amount or customer not logged in.');
-            return new RedirectResponse($this->generateUrl('frontend.checkout.confirm.page'));
-        }
+    $creditBalance = $this->getCreditBalance($customer->getId());
+    $amountToApply = min($creditBalance, $amount);
 
-        if ($restrictedProducts = $this->hasRestrictedProductsInCart($context)) {
-            $productNames = array_map(
-                static fn ($product) => '<strong>' . htmlspecialchars($product['name'], ENT_QUOTES) . '</strong>',
-                $restrictedProducts
-            );
-            $this->addFlash(
-                'warning',
-                'Store credit cannot be applied due to restricted products in the cart: ' . implode(', ', $productNames)
-            );
-            return new RedirectResponse($this->generateUrl('frontend.checkout.confirm.page'));
-        }
+    $cart = $this->cartService->getCart($context->getToken(), $context);
+    $lineItems = $cart->getLineItems()->filterType(LineItem::CREDIT_LINE_ITEM_TYPE);
+    $storeCreditDiscount = $lineItems->get($this->storeCreditLineItemId);
+    $totalAppliedCredit = 0;
 
-        $creditBalance = $this->getCreditBalance($customer->getId());
-        $amountToApply = min($creditBalance, $amount);
+    foreach ($lineItems as $lineItem) {
+      $totalAppliedCredit += abs($lineItem->getPrice()->getTotalPrice());
+    }
 
-        $cart = $this->cartService->getCart($context->getToken(), $context);
-        $lineItems = $cart->getLineItems()->filterType(LineItem::CREDIT_LINE_ITEM_TYPE);
-        $storeCreditDiscount = $lineItems->get($this->storeCreditLineItemId);
-        $totalAppliedCredit = 0;
+    if ($totalAppliedCredit + $amountToApply > $creditBalance) {
+      $this->addFlash('warning', 'Requested amount exceeds available store credit.');
+      return new RedirectResponse($this->generateUrl('frontend.checkout.confirm.page'));
+    }
 
-        foreach ($lineItems as $lineItem) {
-            $totalAppliedCredit += abs($lineItem->getPrice()->getTotalPrice());
-        }
+    if ($storeCreditDiscount) {
+      $currentPrice = $storeCreditDiscount->getPrice()->getTotalPrice();
+      $newPrice = max(-$creditBalance, $currentPrice - $amountToApply);
+      $storeCreditDiscount->setPriceDefinition(new AbsolutePriceDefinition($newPrice));
+    } else {
+      $discount = new LineItem($this->storeCreditLineItemId, LineItem::CREDIT_LINE_ITEM_TYPE, null, 1);
+      $discount->setLabel('Store credit discount');
+      $discount->setRemovable(true);
+      $discount->setStackable(true);
+      $discount->setPriceDefinition(new AbsolutePriceDefinition(-$amountToApply));
+      $discount->setGood(false);
 
-        if ($totalAppliedCredit + $amountToApply > $creditBalance) {
-            $this->addFlash('warning', 'Requested amount exceeds available store credit.');
-            return new RedirectResponse($this->generateUrl('frontend.checkout.confirm.page'));
-        }
-
-        if ($storeCreditDiscount) {
-            $currentPrice = $storeCreditDiscount->getPrice()->getTotalPrice();
-            $newPrice = max(-$creditBalance, $currentPrice - $amountToApply);
-            $storeCreditDiscount->setPriceDefinition(new AbsolutePriceDefinition($newPrice));
-        } else {
-            $discount = new LineItem($this->storeCreditLineItemId, LineItem::CREDIT_LINE_ITEM_TYPE, null, 1);
-            $discount->setLabel('Store credit discount');
-            $discount->setRemovable(true);
-            $discount->setStackable(true);
-            $discount->setPriceDefinition(new AbsolutePriceDefinition(-$amountToApply));
-            $discount->setGood(false);
-            $this->cartService->add($cart, $discount, $context);
-        }
-
-        $this->cartService->recalculate($cart, $context);
-        $this->addFlash('success', 'Store credit applied successfully.');
+      if (!$this->addStoreCreditLineItem($cart, $discount, $context)) {
+        $this->addFlash('warning', 'Unable to apply store credit due to cart conflicts. Please try again or contact support.');
         return new RedirectResponse($this->generateUrl('frontend.checkout.confirm.page'));
+      }
     }
 
-    private function getCreditBalance(?string $customerId): float
-    {
-        if (!$customerId) {
-            return 0.0;
-        }
+    $this->cartService->recalculate($cart, $context);
+    $this->addFlash('success', 'Store credit applied successfully.');
+    return new RedirectResponse($this->generateUrl('frontend.checkout.confirm.page'));
+  }
 
-        $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('customerId', $customerId));
-        $result = $this->storeCreditRepository->search($criteria, Context::createDefaultContext());
-        $storeCreditEntity = $result->first();
-
-        return $storeCreditEntity ? (float)$storeCreditEntity->get('balance') : 0.0;
+  private function getCreditBalance(?string $customerId): float
+  {
+    if (!$customerId) {
+      return 0.0;
     }
 
-    private function hasRestrictedProductsInCart(SalesChannelContext $context): array|bool
-    {
-        $restrictedProductIds = $this->systemConfigurationService->get('StoreCredit.config.restrictedProducts');
-        if (empty($restrictedProductIds)) {
-            return false;
-        }
+    $criteria = new Criteria();
+    $criteria->addFilter(new EqualsFilter('customerId', $customerId));
+    $result = $this->storeCreditRepository->search($criteria, Context::createDefaultContext());
+    $storeCreditEntity = $result->first();
 
-        $cart = $this->cartService->getCart($context->getToken(), $context);
-        $restrictedProducts = [];
+    return $storeCreditEntity ? (float)$storeCreditEntity->get('balance') : 0.0;
+  }
 
-        foreach ($cart->getLineItems() as $lineItem) {
-            if (in_array($lineItem->getReferencedId(), $restrictedProductIds)) {
-                $restrictedProducts[] = [
-                    'id' => $lineItem->getReferencedId(),
-                    'name' => $lineItem->getLabel(),
-                ];
-            }
-        }
-        return !empty($restrictedProducts) ? $restrictedProducts : false;
+  private function hasRestrictedProductsInCart(SalesChannelContext $context): array|bool
+  {
+    $restrictedProductIds = $this->systemConfigurationService->get('StoreCredit.config.restrictedProducts');
+    if (empty($restrictedProductIds)) {
+      return false;
     }
+
+    $cart = $this->cartService->getCart($context->getToken(), $context);
+    $restrictedProducts = [];
+
+    foreach ($cart->getLineItems() as $lineItem) {
+      if (in_array($lineItem->getReferencedId(), $restrictedProductIds)) {
+        $restrictedProducts[] = [
+          'id' => $lineItem->getReferencedId(),
+          'name' => $lineItem->getLabel(),
+        ];
+      }
+    }
+    return !empty($restrictedProducts) ? $restrictedProducts : false;
+  }
+
+  /**
+   * Check if the cart contains any non-stackable line items that might cause conflicts
+   * when adding store credit line items
+   */
+  private function hasNonStackableLineItems($cart): bool
+  {
+    foreach ($cart->getLineItems() as $lineItem) {
+      if ($lineItem->getId() === $this->storeCreditLineItemId) {
+        continue;
+      }
+
+      if (!$lineItem->isStackable()) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Safely add store credit line item to cart with conflict handling
+   */
+  private function addStoreCreditLineItem($cart, $discount, $context): bool
+  {
+    try {
+      $this->cartService->add($cart, $discount, $context);
+      return true;
+    } catch (\Exception $e) {
+      return $this->resolveCartConflicts($cart, $discount, $context);
+    }
+  }
+
+  /**
+   * Advanced conflict resolution for cart manipulation
+   */
+  private function resolveCartConflicts($cart, $discount, $context): bool
+  {
+    if ($this->hasPremiumOrderProtection($cart)) {
+      return $this->handlePremiumOrderProtectionConflict($cart, $discount, $context);
+    }
+
+    return $this->tryAlternativeCartManipulation($cart, $discount, $context);
+  }
+
+  /**
+   * Handle specific Premium Order Protection conflicts
+   */
+  private function handlePremiumOrderProtectionConflict($cart, $discount, $context): bool
+  {
+    try {
+      $protectionItem = $cart->getLineItems()->get('premium-protection-fee');
+      $protectionData = null;
+
+      if ($protectionItem) {
+        $protectionData = [
+          'id' => $protectionItem->getId(),
+          'type' => $protectionItem->getType(),
+          'label' => $protectionItem->getLabel(),
+          'price' => $protectionItem->getPrice(),
+          'quantity' => $protectionItem->getQuantity(),
+          'stackable' => $protectionItem->isStackable(),
+          'removable' => $protectionItem->isRemovable(),
+          'good' => $protectionItem->isGood()
+        ];
+
+        $cart->remove('premium-protection-fee');
+      }
+
+      $this->cartService->add($cart, $discount, $context);
+
+      if ($protectionData) {
+        $newProtectionItem = new LineItem(
+          $protectionData['id'],
+          $protectionData['type'],
+          null,
+          $protectionData['quantity']
+        );
+        $newProtectionItem->setLabel($protectionData['label']);
+        $newProtectionItem->setPriceDefinition($protectionData['price']->getPriceDefinition());
+        $newProtectionItem->setStackable($protectionData['stackable']);
+        $newProtectionItem->setRemovable($protectionData['removable']);
+        $newProtectionItem->setGood($protectionData['good']);
+
+        $cart->getLineItems()->add($newProtectionItem);
+      }
+
+      return true;
+    } catch (\Exception $e) {
+      return $this->tryAlternativeCartManipulation($cart, $discount, $context);
+    }
+  }
+
+  /**
+   * Try alternative cart manipulation methods
+   */
+  private function tryAlternativeCartManipulation($cart, $discount, $context): bool
+  {
+    try {
+      $cart->getLineItems()->add($discount);
+      return true;
+    } catch (\Exception $e2) {
+      try {
+        $newCart = $this->cartService->createNew($context->getToken());
+        $newCart->getLineItems()->add($discount);
+
+        foreach ($cart->getLineItems() as $existingItem) {
+          if ($existingItem->getId() !== $this->storeCreditLineItemId) {
+            $newCart->getLineItems()->add($existingItem);
+          }
+        }
+
+        $this->cartService->recalculate($newCart, $context);
+        return true;
+      } catch (\Exception $e3) {
+        return false;
+      }
+    }
+  }
+
+
+  private function hasPremiumOrderProtection($cart): bool
+  {
+    foreach ($cart->getLineItems() as $lineItem) {
+      if ($lineItem->getId() === 'premium-protection-fee' ||
+        $lineItem->getLabel() === 'Premium Order Protection') {
+        return true;
+      }
+    }
+
+    return false;
+  }
 }
