@@ -61,12 +61,9 @@ class StoreCreditApplyController extends StorefrontController
     }
 
     $creditBalance = $this->getCreditBalance($customer->getId());
+    $amountToApply = min($creditBalance, $amount);
+
     $cart = $this->cartService->getCart($context->getToken(), $context);
-
-    // Calculate maximum allowed credit based on configuration
-    $maxAllowedCredit = $this->calculateMaxAllowedCredit($cart);
-    $amountToApply = min($creditBalance, $amount, $maxAllowedCredit);
-
     $lineItems = $cart->getLineItems()->filterType(LineItem::CREDIT_LINE_ITEM_TYPE);
     $storeCreditDiscount = $lineItems->get($this->storeCreditLineItemId);
     $totalAppliedCredit = 0;
@@ -75,15 +72,17 @@ class StoreCreditApplyController extends StorefrontController
       $totalAppliedCredit += abs($lineItem->getPrice()->getTotalPrice());
     }
 
-    // Validate against available credit
-    if ($totalAppliedCredit + $amountToApply > $creditBalance) {
-      $this->addFlash('warning', 'Requested amount exceeds available store credit.');
-      return new RedirectResponse($this->generateUrl('frontend.checkout.confirm.page'));
+    $maxCreditPerOrder = $this->systemConfigurationService->get('StoreCredit.config.maxCreditPerOrder');
+    if ($maxCreditPerOrder > 0) {
+      $totalAfterApply = $totalAppliedCredit + $amountToApply;
+      if ($totalAfterApply > $maxCreditPerOrder) {
+        $this->addFlash('warning', "Maximum store credit per order is $" . number_format($maxCreditPerOrder, 2) . ". You can only apply $" . number_format($maxCreditPerOrder - $totalAppliedCredit, 2) . " more.");
+        return new RedirectResponse($this->generateUrl('frontend.checkout.confirm.page'));
+      }
     }
 
-    // Validate against maximum allowed credit
-    if ($totalAppliedCredit + $amountToApply > $maxAllowedCredit) {
-      $this->addFlash('warning', 'Store credit amount exceeds the maximum allowed per order.');
+    if ($totalAppliedCredit + $amountToApply > $creditBalance) {
+      $this->addFlash('warning', 'Requested amount exceeds available store credit.');
       return new RedirectResponse($this->generateUrl('frontend.checkout.confirm.page'));
     }
 
@@ -141,41 +140,4 @@ class StoreCreditApplyController extends StorefrontController
     return !empty($restrictedProducts) ? $restrictedProducts : false;
   }
 
-  private function calculateMaxAllowedCredit(Cart $cart): float
-  {
-    // Get configuration values
-    $maxCreditPerOrder = (float) $this->systemConfigurationService->get('StoreCredit.config.maxCreditPerOrder', 0);
-    $maxCreditPercentage = (float) $this->systemConfigurationService->get('StoreCredit.config.maxCreditPercentage', 100);
-
-    // Calculate subtotal (excluding store credits and protection fees)
-    $subtotal = $this->calculateCartSubtotal($cart);
-
-    // Calculate maximum credit based on percentage
-    $maxCreditByPercentage = $subtotal * ($maxCreditPercentage / 100);
-
-    // Return the most restrictive limit
-    if ($maxCreditPerOrder > 0) {
-      return min($maxCreditPerOrder, $maxCreditByPercentage);
-    }
-
-    return $maxCreditByPercentage;
-  }
-
-  private function calculateCartSubtotal(Cart $cart): float
-  {
-    $subtotal = 0.0;
-
-    foreach ($cart->getLineItems() as $lineItem) {
-      // Skip store credits, protection fees, and other non-product items
-      if ($lineItem->getType() === LineItem::CREDIT_LINE_ITEM_TYPE ||
-        $lineItem->getId() === 'premium-protection-fee' ||
-        $lineItem->getId() === 'store-credit-discount') {
-        continue;
-      }
-
-      $subtotal += $lineItem->getPrice()->getTotalPrice();
-    }
-
-    return $subtotal;
-  }
 }
