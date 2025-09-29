@@ -61,9 +61,12 @@ class StoreCreditApplyController extends StorefrontController
     }
 
     $creditBalance = $this->getCreditBalance($customer->getId());
-    $amountToApply = min($creditBalance, $amount);
-
     $cart = $this->cartService->getCart($context->getToken(), $context);
+
+    // Calculate maximum allowed credit based on configuration
+    $maxAllowedCredit = $this->calculateMaxAllowedCredit($cart);
+    $amountToApply = min($creditBalance, $amount, $maxAllowedCredit);
+
     $lineItems = $cart->getLineItems()->filterType(LineItem::CREDIT_LINE_ITEM_TYPE);
     $storeCreditDiscount = $lineItems->get($this->storeCreditLineItemId);
     $totalAppliedCredit = 0;
@@ -72,8 +75,15 @@ class StoreCreditApplyController extends StorefrontController
       $totalAppliedCredit += abs($lineItem->getPrice()->getTotalPrice());
     }
 
+    // Validate against available credit
     if ($totalAppliedCredit + $amountToApply > $creditBalance) {
       $this->addFlash('warning', 'Requested amount exceeds available store credit.');
+      return new RedirectResponse($this->generateUrl('frontend.checkout.confirm.page'));
+    }
+
+    // Validate against maximum allowed credit
+    if ($totalAppliedCredit + $amountToApply > $maxAllowedCredit) {
+      $this->addFlash('warning', 'Store credit amount exceeds the maximum allowed per order.');
       return new RedirectResponse($this->generateUrl('frontend.checkout.confirm.page'));
     }
 
@@ -88,11 +98,7 @@ class StoreCreditApplyController extends StorefrontController
       $discount->setStackable(true);
       $discount->setPriceDefinition(new AbsolutePriceDefinition(-$amountToApply));
       $discount->setGood(false);
-
-      if (!$this->addStoreCreditLineItem($cart, $discount, $context)) {
-        $this->addFlash('warning', 'Unable to apply store credit due to cart conflicts. Please try again or contact support.');
-        return new RedirectResponse($this->generateUrl('frontend.checkout.confirm.page'));
-      }
+      $this->cartService->add($cart, $discount, $context);
     }
 
     $this->cartService->recalculate($cart, $context);
@@ -135,135 +141,41 @@ class StoreCreditApplyController extends StorefrontController
     return !empty($restrictedProducts) ? $restrictedProducts : false;
   }
 
-  /**
-   * Check if the cart contains any non-stackable line items that might cause conflicts
-   * when adding store credit line items
-   */
-  private function hasNonStackableLineItems($cart): bool
+  private function calculateMaxAllowedCredit(Cart $cart): float
   {
+    // Get configuration values
+    $maxCreditPerOrder = (float) $this->systemConfigurationService->get('StoreCredit.config.maxCreditPerOrder', 0);
+    $maxCreditPercentage = (float) $this->systemConfigurationService->get('StoreCredit.config.maxCreditPercentage', 100);
+
+    // Calculate subtotal (excluding store credits and protection fees)
+    $subtotal = $this->calculateCartSubtotal($cart);
+
+    // Calculate maximum credit based on percentage
+    $maxCreditByPercentage = $subtotal * ($maxCreditPercentage / 100);
+
+    // Return the most restrictive limit
+    if ($maxCreditPerOrder > 0) {
+      return min($maxCreditPerOrder, $maxCreditByPercentage);
+    }
+
+    return $maxCreditByPercentage;
+  }
+
+  private function calculateCartSubtotal(Cart $cart): float
+  {
+    $subtotal = 0.0;
+
     foreach ($cart->getLineItems() as $lineItem) {
-      if ($lineItem->getId() === $this->storeCreditLineItemId) {
+      // Skip store credits, protection fees, and other non-product items
+      if ($lineItem->getType() === LineItem::CREDIT_LINE_ITEM_TYPE ||
+        $lineItem->getId() === 'premium-protection-fee' ||
+        $lineItem->getId() === 'store-credit-discount') {
         continue;
       }
 
-      if (!$lineItem->isStackable()) {
-        return true;
-      }
+      $subtotal += $lineItem->getPrice()->getTotalPrice();
     }
 
-    return false;
-  }
-
-  /**
-   * Safely add store credit line item to cart with conflict handling
-   */
-  private function addStoreCreditLineItem($cart, $discount, $context): bool
-  {
-    try {
-      $this->cartService->add($cart, $discount, $context);
-      return true;
-    } catch (\Exception $e) {
-      return $this->resolveCartConflicts($cart, $discount, $context);
-    }
-  }
-
-  /**
-   * Advanced conflict resolution for cart manipulation
-   */
-  private function resolveCartConflicts($cart, $discount, $context): bool
-  {
-    if ($this->hasPremiumOrderProtection($cart)) {
-      return $this->handlePremiumOrderProtectionConflict($cart, $discount, $context);
-    }
-
-    return $this->tryAlternativeCartManipulation($cart, $discount, $context);
-  }
-
-  /**
-   * Handle specific Premium Order Protection conflicts
-   */
-  private function handlePremiumOrderProtectionConflict($cart, $discount, $context): bool
-  {
-    try {
-      $protectionItem = $cart->getLineItems()->get('premium-protection-fee');
-      $protectionData = null;
-
-      if ($protectionItem) {
-        $protectionData = [
-          'id' => $protectionItem->getId(),
-          'type' => $protectionItem->getType(),
-          'label' => $protectionItem->getLabel(),
-          'price' => $protectionItem->getPrice(),
-          'quantity' => $protectionItem->getQuantity(),
-          'stackable' => $protectionItem->isStackable(),
-          'removable' => $protectionItem->isRemovable(),
-          'good' => $protectionItem->isGood()
-        ];
-
-        $cart->remove('premium-protection-fee');
-      }
-
-      $this->cartService->add($cart, $discount, $context);
-
-      if ($protectionData) {
-        $newProtectionItem = new LineItem(
-          $protectionData['id'],
-          $protectionData['type'],
-          null,
-          $protectionData['quantity']
-        );
-        $newProtectionItem->setLabel($protectionData['label']);
-        $newProtectionItem->setPriceDefinition($protectionData['price']->getPriceDefinition());
-        $newProtectionItem->setStackable($protectionData['stackable']);
-        $newProtectionItem->setRemovable($protectionData['removable']);
-        $newProtectionItem->setGood($protectionData['good']);
-
-        $cart->getLineItems()->add($newProtectionItem);
-      }
-
-      return true;
-    } catch (\Exception $e) {
-      return $this->tryAlternativeCartManipulation($cart, $discount, $context);
-    }
-  }
-
-  /**
-   * Try alternative cart manipulation methods
-   */
-  private function tryAlternativeCartManipulation($cart, $discount, $context): bool
-  {
-    try {
-      $cart->getLineItems()->add($discount);
-      return true;
-    } catch (\Exception $e2) {
-      try {
-        $newCart = $this->cartService->createNew($context->getToken());
-        $newCart->getLineItems()->add($discount);
-
-        foreach ($cart->getLineItems() as $existingItem) {
-          if ($existingItem->getId() !== $this->storeCreditLineItemId) {
-            $newCart->getLineItems()->add($existingItem);
-          }
-        }
-
-        $this->cartService->recalculate($newCart, $context);
-        return true;
-      } catch (\Exception $e3) {
-        return false;
-      }
-    }
-  }
-
-
-  private function hasPremiumOrderProtection($cart): bool
-  {
-    foreach ($cart->getLineItems() as $lineItem) {
-      if ($lineItem->getId() === 'premium-protection-fee' ||
-        $lineItem->getLabel() === 'Premium Order Protection') {
-        return true;
-      }
-    }
-
-    return false;
+    return $subtotal;
   }
 }
