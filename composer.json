@@ -1,5 +1,5 @@
 {
-    "name": "cds/store-credit",
+    "name": "solution25/store-credit",
     "description": "Store Credit for Shopware 6",
     "type": "shopware-platform-plugin",
     "version": "1.0.0",

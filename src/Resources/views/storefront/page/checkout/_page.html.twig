@@ -8,8 +8,8 @@
         <div class="store-credit-balance" data-cart-price>
             {% set maxCreditPerOrder = page.maxCreditPerOrder %}
             {% if page.storeCreditBalance > 0 %}
-                <div class="cds-checkout-store-credit">
-                    <a class="cds-btn-store-credit collapsed d-flex align-items-center justify-content-center"
+                <div class="checkout-store-credit">
+                    <a class="btn-store-credit collapsed d-flex align-items-center justify-content-center"
                        data-bs-toggle="collapse" href="#storeCredit"
                        role="button" aria-expanded="false" aria-controls="storeCredit">
                         <p class="mb-0 w-100 d-flex align-items-center">
@@ -18,7 +18,7 @@
                         {% sw_icon 'chevron-down' style { 'pack': 'cdstheme' } %}
                     </a>
                     <div class="collapse" id="storeCredit">
-                        <div class="card card-body cds-store-credit-card-body">
+                        <div class="card card-body store-credit-card-body">
                             <p class="store-credit-balance">
 
                                 {% set totalBalanceCalculated = page.storeCreditBalance %}
