@@ -67,19 +67,13 @@
         <service id="StoreCredit\EventSubscriber\StoreCreditCheckoutSubscriber">
             <argument type="service" id="StoreCredit\Service\StoreCreditManager"/>
             <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
-            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
             <tag name="kernel.event_subscriber"/>
-        </service>
-
-        <service id="StoreCredit\Core\Checkout\Cart\Processor\ValidateStoreCreditCartProcessor" public="true">
-            <tag name="shopware.cart.processor" priority="-9000"/>
         </service>
 
         <service id="StoreCredit\Command\OrderStateInstallerCommand">
             <argument type="service" id="StoreCredit\Service\OrderStateInstaller"/>
             <tag name="console.command" />
         </service>
-
 
         <service id="StoreCredit\Subscriber\ConfigCommandSubscriber">
             <argument type="service" id="console.command_loader"/>
@@ -96,5 +90,11 @@
             <argument type="service" id="Shopware\Administration\Notification\NotificationService"/>
             <tag name="kernel.event_subscriber"/>
         </service>
+
+        <service id="StoreCredit\Core\Checkout\Cart\Processor\ValidateStoreCreditCartProcessor">
+            <tag name="shopware.cart.processor" priority="-20000"/>
+        </service>
+
+        
     </services>
 </container>

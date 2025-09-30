@@ -5,14 +5,14 @@
 
     <card>
         <title>Store Credit Limits</title>
-
+        
         <input-field type="float">
             <name>maxCreditPerOrder</name>
             <label lang="en-GB">Maximum credit per order</label>
             <default>0</default>
             <helpText lang="en-GB">Maximum store credit amount that can be applied per order (0 = no limit)</helpText>
         </input-field>
-
+        
         <input-field type="int">
             <name>maxCreditPercentage</name>
             <label lang="en-GB">Maximum credit percentage per order</label>
@@ -33,12 +33,12 @@
     </card>
 
     <card>
-        <title>Store Credit Add State</title>
-        <input-field type="bool">
-            <name>runInstallOrderStateCommand</name>
-            <label lang="en-GB">Run Order State Installer</label>
-            <helpText lang="en-GB">Toggle and save to execute the order state installation command.</helpText>
-        </input-field>
+    <title>Store Credit Add State</title>
+    <input-field type="bool">
+        <name>runInstallOrderStateCommand</name>
+        <label lang="en-GB">Run Order State Installer</label>
+        <helpText lang="en-GB">Toggle and save to execute the order state installation command.</helpText>
+    </input-field>
     </card>
 
     <card>

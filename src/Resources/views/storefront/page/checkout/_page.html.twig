@@ -1,15 +1,15 @@
 {% sw_extends '@Storefront/storefront/page/checkout/_page.html.twig' %}
 
-{% block page_checkout_summary_list %}
+{% block page_checkout_aside_summary %}
     {{ parent() }}
     {% set storeCreditId = page.storeCreditId %}
 
     {% if activeRoute == 'frontend.checkout.confirm.page' %}
         <div class="store-credit-balance" data-cart-price>
-            {% set maxCreditPerOrder = page.maxCreditPerOrder %}
-            {% if page.storeCreditBalance > 0 %}
-                <div class="checkout-store-credit">
-                    <a class="btn-store-credit collapsed d-flex align-items-center justify-content-center"
+            {% set maxCreditPerOrder = page.maxCreditPerOrder|default(0) %}
+            {% if page.storeCreditBalance|default(0) > 0 %}
+                <div class="cds-checkout-store-credit">
+                    <a class="cds-btn-store-credit collapsed d-flex align-items-center justify-content-center"
                        data-bs-toggle="collapse" href="#storeCredit"
                        role="button" aria-expanded="false" aria-controls="storeCredit">
                         <p class="mb-0 w-100 d-flex align-items-center">
@@ -18,7 +18,7 @@
                         {% sw_icon 'chevron-down' style { 'pack': 'cdstheme' } %}
                     </a>
                     <div class="collapse" id="storeCredit">
-                        <div class="card card-body store-credit-card-body">
+                        <div class="card card-body cds-store-credit-card-body">
                             <p class="store-credit-balance">
 
                                 {% set totalBalanceCalculated = page.storeCreditBalance %}
