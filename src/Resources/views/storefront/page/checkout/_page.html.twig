@@ -25,7 +25,7 @@
                                     {% set totalBalanceCalculated = totalBalanceCalculated + page.cart.lineItems.elements[storeCreditId].price.totalPrice %}
                                 {% endif %}
                                 <p class="store-credit-balance">
-                                    {{ 'store-credit.description'|trans|sw_sanitize }}: {{ totalBalanceCalculated | currency(page.storeCreditCurrencyId) }}
+                                    {{ 'store-credit.description'|trans|sw_sanitize }}: {{ totalBalanceCalculated | currency }}
                                 </p>
                                 {% set maxAllowedCredit = min(totalBalanceCalculated, page.cart.price.rawTotal) %}
                                 <form id="store-credit-form" method="POST"
