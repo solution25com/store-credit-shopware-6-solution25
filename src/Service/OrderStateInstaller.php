@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace StoreCredit\Service;
+namespace Solu1StoreCredit\Service;
 
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;

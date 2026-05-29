@@ -5,10 +5,10 @@
     "version": "1.0.5",
     "license": "MIT",
     "authors": [
-      {
-        "name": "solution 25",
-        "role": "Manufacturer"
-      }
+        {
+            "name": "solution 25",
+            "role": "Manufacturer"
+        }
     ],
     "require": {
         "shopware/core": "~6.6.0",
@@ -19,32 +19,32 @@
         "phpstan/phpstan": "^2.1"
     },
     "extra": {
-        "shopware-plugin-class": "StoreCredit\\StoreCredit",
+        "shopware-plugin-class": "Solu1StoreCredit\\StoreCredit",
         "label": {
             "de-DE": "Store Credit",
             "en-GB": "Store Credit"
         },
         "description": {
-          "de-DE": "Verwalten Sie Guthaben für Retouren einfach. Admins weisen Kundenkonten Guthaben zu, das flexibel für zukünftige Einkäufe genutzt werden kann, bis der Betrag aufgebraucht ist.",
-          "en-GB": "Manage store credits for returns easily. Admins allocate credit to customer accounts, usable for future purchases until the balance is fully utilized. Alternative to refunds."
+            "de-DE": "Verwalten Sie Guthaben für Retouren einfach. Admins weisen Kundenkonten Guthaben zu, das flexibel für zukünftige Einkäufe genutzt werden kann, bis der Betrag aufgebraucht ist.",
+            "en-GB": "Manage store credits for returns easily. Admins allocate credit to customer accounts, usable for future purchases until the balance is fully utilized. Alternative to refunds."
         },
         "manufacturerLink": {
-          "de-DE": "https://solution25.com/",
-          "en-GB": "https://solution25.com/en/home_en/"
+            "de-DE": "https://solution25.com/",
+            "en-GB": "https://solution25.com/en/home_en/"
         },
         "supportLink": {
-          "de-DE": "https://solution25.com/",
-          "en-GB": "https://solution25.com/en/home_en/"
+            "de-DE": "https://solution25.com/",
+            "en-GB": "https://solution25.com/en/home_en/"
         }
     },
     "autoload": {
         "psr-4": {
-            "StoreCredit\\": "src/"
+            "Solu1StoreCredit\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "StoreCredit\\Tests\\": "tests/"
+            "Solu1StoreCredit\\Tests\\": "tests/"
         }
     },
     "scripts": {

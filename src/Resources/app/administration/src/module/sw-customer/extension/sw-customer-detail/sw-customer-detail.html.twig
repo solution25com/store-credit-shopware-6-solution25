@@ -1,0 +1,13 @@
+{% block sw_customer_detail_content_tab_after %}
+{% parent %}
+
+<sw-tabs-item
+    v-if="storeCreditsRoute"
+    class="sw-customer-detail__tab-store-credits"
+    :route="storeCreditsRoute"
+    :title="$tc('store-credits.customer.tabTitle')"
+>
+    {{ $tc('store-credits.customer.tabTitle') }}
+</sw-tabs-item>
+{% endblock %}
+

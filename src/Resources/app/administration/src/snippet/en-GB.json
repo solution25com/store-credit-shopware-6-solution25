@@ -1,6 +1,15 @@
 {
-  "sw-order-detail": {
-    "creditCardEditRestrictedTitle": "Order Edit Restricted",
-    "creditCardEditRestrictedMessage": "Changes to orders paid with a Credit Card are not allowed hah."
-  }
+    "store-credits": {
+        "customer": {
+            "tabTitle": "Store Credits",
+            "currentBalance": "Current Balance",
+            "addCredit": "Add Credit",
+            "deductCredit": "Deduct Credit",
+            "amount": "Amount",
+            "amountPlaceholder": "Enter amount",
+            "reason": "Reason",
+            "reasonPlaceholder": "Enter reason (optional)"
+        }
+    }
 }
+

@@ -1,6 +1,6 @@
 <?php
 
-namespace StoreCredit\Subscriber;
+namespace Solu1StoreCredit\Subscriber;
 
 use Shopware\Core\System\SystemConfig\Event\SystemConfigChangedEvent;
 use Symfony\Component\Console\Command\Command;

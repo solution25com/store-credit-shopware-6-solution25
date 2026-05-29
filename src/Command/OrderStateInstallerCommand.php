@@ -1,10 +1,10 @@
 <?php
 
-namespace StoreCredit\Command;
+namespace Solu1StoreCredit\Command;
 
 use Shopware\Core\Framework\Api\Context\SystemSource;
 use Shopware\Core\Framework\Context;
-use StoreCredit\Service\OrderStateInstaller;
+use Solu1StoreCredit\Service\OrderStateInstaller;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;

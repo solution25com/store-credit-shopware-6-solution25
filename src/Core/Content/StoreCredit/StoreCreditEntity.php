@@ -1,10 +1,11 @@
 <?php
 
-namespace StoreCredit\Core\Content\StoreCredit;
+namespace Solu1StoreCredit\Core\Content\StoreCredit;
 
 use Shopware\Core\Checkout\Customer\CustomerEntity;
 use Shopware\Core\Framework\DataAbstractionLayer\Entity;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityIdTrait;
+use Shopware\Core\System\Currency\CurrencyEntity;
 
 class StoreCreditEntity extends Entity
 {
@@ -27,6 +28,10 @@ class StoreCreditEntity extends Entity
      * @var string|null
      */
     protected ?string $currencyId = null;
+    /**
+     * @var CurrencyEntity|null
+     */
+    protected ?CurrencyEntity $currency = null;
 
     /**
      * @var float
@@ -91,5 +96,15 @@ class StoreCreditEntity extends Entity
     public function setBalance(float $balance): void
     {
         $this->balance = $balance;
+    }
+
+    public function getCurrency(): ?CurrencyEntity
+    {
+        return $this->currency;
+    }
+
+    public function setCurrency(?CurrencyEntity $currency): void
+    {
+        $this->currency = $currency;
     }
 }

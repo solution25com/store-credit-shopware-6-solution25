@@ -1,38 +1,110 @@
-.customer-details {
-  display: flex;
-  padding: 10px;
-  background-color: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+.store-credit-history-card {
+    margin-bottom: 24px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 
-  sw-button {
-    margin-right: 20px;
-    font-size: 46px;
-    height: auto;
-  }
-
-  .customer-info {
-    padding-left: 20px;
-    display: flex;
-    flex-direction: column;
-    h2 {
-      margin: 0;
-      font-size: 18px;
+    .customer-details-header {
+        display: flex;
+        align-items: center;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #e5e8ec;
     }
 
-    p {
-      margin: 5px 0 0;
-      font-size: 14px;
-      color: #555;
-    }
-  }
-  .text-success {
-    color: green;
-    font-weight: bold;
-  }
+    .customer-info-card {
+        padding: 0;
+        margin-top: 16px;
 
-  .text-danger {
-    color: red;
-    font-weight: bold;
-  }
+        .customer-info-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+            border-radius: 8px;
+            border: 1px solid #e5e8ec;
+
+            .customer-name-section {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+
+                .customer-name {
+                    margin: 0;
+                    font-size: 20px;
+                    font-weight: 600;
+                    color: #2c3e50;
+                }
+
+                .customer-name-link {
+                    color: #189eff;
+                    text-decoration: none;
+                    transition: color 0.2s ease;
+
+                    &:hover {
+                        color: #0d7dd8;
+                        text-decoration: underline;
+                    }
+
+                    .customer-name {
+                        color: inherit;
+                    }
+                }
+
+                .customer-balance {
+                    margin: 8px 0 0;
+                    font-size: 14px;
+                    color: #758ca3;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+
+                    sw-icon {
+                        color: #37d046;
+                    }
+
+                    strong {
+                        color: #189eff;
+                        font-size: 16px;
+                    }
+                }
+            }
+        }
+    }
+}
+
+.history-card {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+    .history-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .sw-data-grid {
+        .date-cell {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #758ca3;
+            font-size: 13px;
+        }
+
+        .amount-add {
+            color: #37d046;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .amount-deduct {
+            color: #de294c;
+            font-weight: 600;
+            font-size: 14px;
+        }
+    }
 }

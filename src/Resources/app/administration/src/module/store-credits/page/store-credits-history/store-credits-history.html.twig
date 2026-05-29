@@ -1,45 +1,125 @@
 <template>
     <sw-page>
-        <template #content>
-            <div class="customer-details">
+        <template #smart-bar-header>
+            <div class="sw-page__smart-bar">
                 <sw-button
                         size="small"
-                        variant="secondary"
+                        variant="ghost"
                         @click="goBack"
                 >
-                   Go Back
+                    Back
                 </sw-button>
-                <div class="customer-info">
-                    <h2>{{ customerName }}</h2>
-                    <p>Balance: {{ formatCurrency(customerBalance) }}</p>
-                </div>
+
+                <sw-page-title>Store Credit History</sw-page-title>
             </div>
+        </template>
 
-            <sw-data-grid
-                    :dataSource="history"
-                    :columns="[
-                    { property: 'amount', label: 'Amount', align: 'right' },
-                    { property: 'reason', label: 'Reason' },
-                    { property: 'createdAt', label: 'Date', align: 'center' }
-                ]"
-                    :isLoading="isLoading"
-            >
-                <template #column-amount="{ item }">
-                    <span
-                            :class="{
-                            'text-success': item.actionType === 'add',
-                            'text-danger': item.actionType === 'deduct'
-                        }"
-                    >
-                        {{ item.actionType === 'add' ? '+' : '-' }}
-                        {{ formatCurrency(item.amount) }}
-                    </span>
+        <template #content>
+            <sw-card class="store-credit-history-card">
+                <template #header>
+                    <div class="customer-details-header">
+                        <sw-button
+                                size="small"
+                                variant="ghost"
+                                @click="goBack"
+                        >
+                            <sw-icon name="regular-arrow-left" size="16px"></sw-icon>
+                            Back to Store Credits
+                        </sw-button>
+                    </div>
                 </template>
 
-                <template #column-createdAt="{ item }">
-                    {{ formatDate(item.createdAt) }}
+                <div class="customer-info-card">
+                    <div class="customer-info-content">
+                        <div class="customer-name-section">
+                            <div>
+                                <router-link 
+                                    v-if="customerId"
+                                    :to="{ name: 'sw.customer.detail', params: { id: customerId } }"
+                                    class="customer-name-link"
+                                >
+                                    <h2 class="customer-name">{{ customerName }}</h2>
+                                </router-link>
+                                <h2 v-else class="customer-name">{{ customerName }}</h2>
+                                <p class="customer-balance">
+                                    <sw-icon name="regular-wallet" size="16px"></sw-icon>
+                                    Current Balance: <strong>{{ formatCurrency(customerBalance, currencyIsoCode) }}</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </sw-card>
+
+            <sw-card class="history-card">
+                <template #header>
+                    <h3 class="history-title">
+                        <sw-icon name="regular-clock" size="20px"></sw-icon>
+                        Transaction History
+                    </h3>
                 </template>
-            </sw-data-grid>
+
+                <sw-data-grid
+                        :dataSource="history"
+                        :columns="[
+                        { property: 'createdAt', label: 'Date & Time', align: 'left', width: '200px' },
+                        { property: 'amount', label: 'Amount', align: 'right', width: '150px' },
+                        { property: 'reason', label: 'Reason', align: 'left' },
+                        { property: 'actionType', label: 'Type', align: 'center', width: '120px' }
+                    ]"
+                        :isLoading="isLoading"
+                        :showActions="false"
+                        :total="total"
+                        :limit="limit"
+                        :page="page"
+                        @page-change="onPageChange"
+                        @limit-change="onLimitChange"
+                >
+                    <template #column-createdAt="{ item }">
+                        <div class="date-cell">
+                            <sw-icon name="regular-calendar" size="14px"></sw-icon>
+                            {{ formatDate(item.createdAt) }}
+                        </div>
+                    </template>
+
+                    <template #column-amount="{ item }">
+                        <span
+                                :class="{
+                                'amount-add': item.actionType === 'add',
+                                'amount-deduct': item.actionType === 'deduct'
+                            }"
+                        >
+                            {{ item.actionType === 'add' ? '+' : '-' }}
+                            {{ formatCurrency(item.amount, item.currencyIsoCode) }}
+                        </span>
+                    </template>
+
+                    <template #column-actionType="{ item }">
+                        <sw-label
+                                :variant="item.actionType === 'add' ? 'success' : 'danger'"
+                                appearance="pill"
+                                size="small"
+                        >
+                            <sw-icon 
+                                    :name="item.actionType === 'add' ? 'regular-check-circle' : 'regular-times-circle'" 
+                                    size="12px"
+                            ></sw-icon>
+                            {{ item.actionType === 'add' ? 'Added' : 'Deducted' }}
+                        </sw-label>
+                    </template>
+
+                    <template #pagination>
+                        <sw-pagination
+                                :total="total"
+                                :limit="limit"
+                                :page="page"
+                                :total-visible="7"
+                                @page-change="onPageChange"
+                                @limit-change="onLimitChange"
+                        />
+                    </template>
+                </sw-data-grid>
+            </sw-card>
         </template>
     </sw-page>
 </template>

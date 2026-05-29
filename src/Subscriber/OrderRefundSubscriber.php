@@ -1,31 +1,34 @@
 <?php
 
-namespace StoreCredit\Subscriber;
+namespace Solu1StoreCredit\Subscriber;
 
-use Exception;
+use Psr\Log\LoggerInterface;
 use Shopware\Core\Checkout\Order\OrderEntity;
+use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
-use StoreCredit\Controller\StoreCreditController;
+use Solu1StoreCredit\Service\StoreCreditManager;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Shopware\Core\Checkout\Order\Event\OrderStateMachineStateChangeEvent;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
-use Symfony\Component\HttpFoundation\Request;
 
 class OrderRefundSubscriber implements EventSubscriberInterface
 {
     private EntityRepository $orderRepository;
-    private EntityRepository $orderReturnRepository;
-    private StoreCreditController $storeCreditController;
+    private ?EntityRepository $orderReturnRepository;
+    private StoreCreditManager $storeCreditManager;
+    private LoggerInterface $logger;
 
     public function __construct(
         EntityRepository $orderRepository,
-        EntityRepository $orderReturnRepository,
-        StoreCreditController $storeCreditController,
+        ?EntityRepository $orderReturnRepository,
+        StoreCreditManager $storeCreditManager,
+        LoggerInterface $logger,
     ) {
         $this->orderRepository       = $orderRepository;
         $this->orderReturnRepository = $orderReturnRepository;
-        $this->storeCreditController = $storeCreditController;
+        $this->storeCreditManager = $storeCreditManager;
+        $this->logger = $logger;
     }
 
     public static function getSubscribedEvents(): array
@@ -40,59 +43,94 @@ class OrderRefundSubscriber implements EventSubscriberInterface
         $orderId = $event->getOrder()->getId();
         $context = $event->getContext();
 
+        $order = $this->getOrderWithAssociations($orderId, $context);
+
+        if (!$this->shouldProcessRefund($order)) {
+            return;
+        }
+
+        $orderReturn = $this->getOrderReturn($orderId, $context);
+        $refundAmount = $this->calculateRefundAmount($orderReturn);
+
+        $this->addStoreCreditForRefund($event->getOrder(), $refundAmount, $context);
+    }
+
+    private function getOrderWithAssociations(string $orderId, Context $context): OrderEntity
+    {
         $criteria = new Criteria([$orderId]);
         $criteria->addAssociation('lineItems');
         $criteria->addAssociation('transactions.paymentMethod');
         $criteria->addAssociation('transactions.stateMachineState');
-        /** @var OrderEntity $order */
-        $order        = $this->orderRepository->search($criteria, $context)->last();
-        $paymentState = $order->getTransactions()->last()?->getStateMachineState()?->getTechnicalName();
 
-        if ($paymentState !== 'paid') {
-            return;
+        /** @var OrderEntity $order */
+        $order = $this->orderRepository->search($criteria, $context)->last();
+
+        return $order;
+    }
+
+    private function getOrderReturn(string $orderId, Context $context): ?OrderEntity
+    {
+        if (!$this->orderReturnRepository) {
+            return null;
         }
 
         $returnCriteria = new Criteria();
         $returnCriteria->addFilter(new EqualsFilter('orderId', $orderId));
-        $returnCriteria->addAssociation('lineItems.lineItem');
-        /** @var OrderEntity $orderReturn */
+        $returnCriteria->addAssociation('lineItems');
+
+        /** @var OrderEntity|null $orderReturn */
         $orderReturn = $this->orderReturnRepository->search($returnCriteria, $context)->last();
 
-        $returnLineItemData = [];
-        /* @phpstan-ignore-next-line */
-        if ($orderReturn) {
-            $returnLineItems    = $orderReturn->getLineItems();
-            $returnLineItemData = $returnLineItems->map(function ($lineItem) {
-                $associatedLineItem = $lineItem->getLineItem();
-                return [
-                    'id'       => $lineItem->getId(),
-                    'name'     => $associatedLineItem ? $associatedLineItem->getLabel() : 'Unknown',
-                    'quantity' => $lineItem->getQuantity(),
-                    'price'    => $lineItem->getPrice()->getTotalPrice(),
-                ];
-            });
+        return $orderReturn;
+    }
+
+    private function shouldProcessRefund(OrderEntity $order): bool
+    {
+        $paymentState = $order->getTransactions()->last()?->getStateMachineState()?->getTechnicalName();
+
+        return $paymentState === 'paid';
+    }
+
+    private function calculateRefundAmount(?OrderEntity $orderReturn): float
+    {
+        if (!$orderReturn) {
+            return 0.0;
         }
 
-        $totalPrice = array_reduce($returnLineItemData, function ($carry, $lineItem) {
-            return $carry + ($lineItem['price'] ?? 0);
-        }, 0);
+        $totalPrice = 0.0;
+        /* @phpstan-ignore-next-line */
+        $returnLineItems = $orderReturn->getLineItems();
+        foreach ($returnLineItems as $lineItem) {
+            $totalPrice += $lineItem->getPrice()->getTotalPrice();
+        }
 
+        return $totalPrice;
+    }
 
-        $storeCreditsReqData = [
-            'customerId' => $event->getOrder()->getOrderCustomer()->getCustomerId(),
-            'orderId'    => $event->getOrder()->getId(),
-            'currencyId' => $event->getContext()->getCurrencyId(),
-            'amount'     => $totalPrice,
-            'reason'     => "Refunded from order with Order Number : " . $event->getOrder()->getOrderNumber(),
-        ];
-
-        $request = new Request([], $storeCreditsReqData);
+    private function addStoreCreditForRefund(OrderEntity $order, float $amount, Context $context): void
+    {
         try {
-            $response = $this->storeCreditController->addCredit($request, $context);
-            if ($response->getStatusCode() === 200) {
-                echo('Credit added to order with Order Number: ' . $event->getOrder()->getOrderNumber());
-            }
+            $customerId = $order->getOrderCustomer()->getCustomerId();
+            $orderId = $order->getId();
+            $orderNumber = $order->getOrderNumber();
+            $currencyId = $context->getCurrencyId();
+            $reason = "Refunded from order with Order Number : " . $orderNumber;
+
+            $this->storeCreditManager->addCredit($customerId, $amount, $context, $orderId, $currencyId, $reason);
+
+            $this->logger->info('Store credit added to customer account from order refund', [
+                'customerId' => $customerId,
+                'orderId' => $orderId,
+                'orderNumber' => $orderNumber,
+                'amount' => $amount,
+                'currencyId' => $currencyId,
+            ]);
         } catch (\Exception $e) {
+            $this->logger->error('Failed to add store credit from order refund', [
+                'orderId' => $order->getId(),
+                'orderNumber' => $order->getOrderNumber(),
+                'error' => $e->getMessage(),
+            ]);
             throw new \RuntimeException($e->getMessage());
         }
     }

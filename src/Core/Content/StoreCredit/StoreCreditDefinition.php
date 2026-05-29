@@ -1,9 +1,9 @@
 <?php
 
-namespace StoreCredit\Core\Content\StoreCredit;
+namespace Solu1StoreCredit\Core\Content\StoreCredit;
 
 use Shopware\Core\Checkout\Customer\CustomerDefinition;
-use Shopware\Core\Framework\DataAbstractionLayer\Field\OneToOneAssociationField;
+use Shopware\Core\Framework\DataAbstractionLayer\Field\ManyToOneAssociationField;
 use Shopware\Core\System\Currency\CurrencyDefinition;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityDefinition;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\DateTimeField;
@@ -18,7 +18,7 @@ class StoreCreditDefinition extends EntityDefinition
 {
     public function getEntityName(): string
     {
-        return 'store_credit';
+        return 'solu1_store_credit';
     }
 
     public function getEntityClass(): string
@@ -41,7 +41,8 @@ class StoreCreditDefinition extends EntityDefinition
             (new DateTimeField('updated_at', 'updatedAt')),
             (new DateTimeField('created_at', 'createdAt'))->addFlags(new Required()),
 
-            new OneToOneAssociationField('customer', 'customer_id', 'id', CustomerDefinition::class),
+            new ManyToOneAssociationField('customer', 'customer_id', CustomerDefinition::class, 'id'),
+            new ManyToOneAssociationField('currency', 'currency_id', CurrencyDefinition::class, 'id'),
         ]);
     }
 }

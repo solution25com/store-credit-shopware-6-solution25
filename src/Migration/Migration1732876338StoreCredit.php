@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace StoreCredit\Migration;
+namespace Solu1StoreCredit\Migration;
 
 use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Log\Package;
@@ -21,8 +21,8 @@ class Migration1732876338StoreCredit extends MigrationStep
 
     public function update(Connection $connection): void
     {
-        $connection->exec("
-            CREATE TABLE IF NOT EXISTS `store_credit` (
+        $connection->executeStatement("
+            CREATE TABLE IF NOT EXISTS `solu1_store_credit` (
             `id` BINARY(16) NOT NULL,
             `customer_id` BINARY(16) NOT NULL,
             `currency_id` BINARY(16) NULL,
@@ -40,5 +40,9 @@ class Migration1732876338StoreCredit extends MigrationStep
             ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ");
+    }
+
+    public function updateDestructive(Connection $connection): void
+    {
     }
 }

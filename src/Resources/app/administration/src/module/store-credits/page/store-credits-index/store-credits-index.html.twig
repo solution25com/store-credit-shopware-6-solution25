@@ -18,14 +18,30 @@
                     :dataSource="storeCredits"
                     :columns="columns"
                     :isLoading="isLoading"
-                    {# :useContext="false"  #}
-
+                    :showSelection="false"
+                    :showActions="true"
+                    :total="total"
+                    :limit="limit"
+                    :page="page"
+                    @page-change="onPageChange"
+                    @limit-change="onLimitChange"
             >
-
-                <template #column-balance="{ item }">
-                    {{ formatCurrency(item.balance) }}
+                <!-- Columns -->
+                <template #column-customerFullName="{ item }">
+                    <router-link 
+                        :to="{ name: 'sw.customer.detail', params: { id: item.customerId } }"
+                        class="customer-name-link"
+                    >
+                        {{ item.customerFullName }}
+                    </router-link>
                 </template>
 
+                <template #column-balance="{ item }">
+                    <span class="store-credit-balance">
+                        <sw-icon name="regular-wallet" size="16px" class="balance-icon"></sw-icon>
+                        {{ formatCurrency(item.balance, item.currencyIsoCode) }}
+                    </span>
+                </template>
 
                 <template #column-actions="{ item }">
                     <sw-button
@@ -33,6 +49,7 @@
                             variant="success"
                             @click="openAddBalanceModal(item)"
                     >
+                        <sw-icon name="regular-plus-circle" size="16px"></sw-icon>
                         Add Balance
                     </sw-button>
                     <sw-button
@@ -40,138 +57,172 @@
                             variant="danger"
                             @click="openDeductBalanceModal(item)"
                     >
+                        <sw-icon name="regular-minus-circle" size="16px"></sw-icon>
                         Deduct Balance
                     </sw-button>
                 </template>
 
-
-                {# <template #column-history="{ item }">
-                    <sw-context-button>
-                        <sw-context-menu-item
-                                @click="navigateToCustomerHistory(item.storeCreditId, item.customerFullName, item.balance)"
-                        >
-                            View History
-                        </sw-context-menu-item>
-                        <sw-context-menu-item
-                                @click="openDeleteModal(item)"
-                                icon="regular-trash"
-                                variant="danger"
-                        >
-                            Delete
-                        </sw-context-menu-item>
-                    </sw-context-button>
-                </template> #}
                 <template #actions="{ item }">
                     <sw-context-menu-item
-                        @click="navigateToCustomerHistory(item.storeCreditId, item.customerFullName, item.balance)"
+                            @click="navigateToCustomerHistory(item.storeCreditId, item.customerFullName, item.balance)"
                     >
                         View History
                     </sw-context-menu-item>
                     <sw-context-menu-item
-                        @click="openDeleteModal(item)"
-                        icon="regular-trash"
-                        variant="danger"
+                            @click="openDeleteModal(item)"
+                            icon="regular-trash"
+                            variant="danger"
                     >
                         Delete
                     </sw-context-menu-item>
-            </template>
+                </template>
+
+                <!-- Pagination slot -->
+                <template #pagination>
+                    <sw-pagination
+                            :total="total"
+                            :limit="limit"
+                            :page="page"
+                            :total-visible="7"
+                            @page-change="onPageChange"
+                            @limit-change="onLimitChange"
+                    />
+                </template>
             </sw-data-grid>
 
+            <!-- Add Balance Modal -->
             <sw-modal
                     v-if="addBalanceModalVisible"
                     title="Add Balance"
                     @modal-close="addBalanceModalVisible = false"
             >
+                <template #modal-header>
+                    <h3 class="sw-modal__title">
+                        <sw-icon name="regular-plus-circle" size="24px"></sw-icon>
+                        Add Balance
+                    </h3>
+                </template>
                 <sw-number-field
                         v-model:value="amount"
                         label="Amount"
                         :min="0.00"
-                        :step="0.00"
+                        :step="0.01"
                         :number-type="'float'"
-                        placeholder="Enter amount"></sw-number-field>
-                <sw-text-field v-model:value="reason" label="Reason" />
-                <sw-button @click="addBalance" size="small" variant="primary">
-                    Submit
-                </sw-button>
-                <sw-button
-                        @click="addBalanceModalVisible = false"
-                        size="small"
-                        variant="danger"
-                >
-                    Cancel
-                </sw-button>
+                        placeholder="0.00"
+                        required
+                />
+                <sw-text-field 
+                        v-model:value="reason" 
+                        label="Reason" 
+                        placeholder="Enter reason for adding balance"
+                />
+                <template #modal-footer>
+                    <sw-button @click="addBalanceModalVisible = false" size="small">
+                        Cancel
+                    </sw-button>
+                    <sw-button @click="addBalance" size="small" variant="primary">
+                        <sw-icon name="regular-check" size="16px"></sw-icon>
+                        Add Balance
+                    </sw-button>
+                </template>
             </sw-modal>
 
+            <!-- Deduct Balance Modal -->
             <sw-modal
                     v-if="deductBalanceModalVisible"
                     title="Deduct Balance"
                     @modal-close="deductBalanceModalVisible = false"
             >
+                <template #modal-header>
+                    <h3 class="sw-modal__title">
+                        <sw-icon name="regular-minus-circle" size="24px"></sw-icon>
+                        Deduct Balance
+                    </h3>
+                </template>
                 <sw-number-field
                         v-model:value="amount"
                         label="Amount"
                         :min="0.00"
-                        :step="0.00"
+                        :step="0.01"
                         :number-type="'float'"
-                        placeholder="Enter amount"></sw-number-field>
-                <sw-text-field v-model:value="reason" label="Reason" />
-                <sw-button @click="deductBalance" size="small" variant="primary">
-                    Submit
-                </sw-button>
-                <sw-button
-                        @click="deductBalanceModalVisible = false"
-                        size="small"
-                        variant="danger"
-                >
-                    Cancel
-                </sw-button>
+                        placeholder="0.00"
+                        required
+                />
+                <sw-text-field 
+                        v-model:value="reason" 
+                        label="Reason" 
+                        placeholder="Enter reason for deducting balance"
+                />
+                <template #modal-footer>
+                    <sw-button @click="deductBalanceModalVisible = false" size="small">
+                        Cancel
+                    </sw-button>
+                    <sw-button @click="deductBalance" size="small" variant="danger">
+                        <sw-icon name="regular-check" size="16px"></sw-icon>
+                        Deduct Balance
+                    </sw-button>
+                </template>
             </sw-modal>
+
+            <!-- Delete Confirmation Modal -->
             <sw-modal
                     v-if="confirmDeleteModalVisible"
                     title="Confirm Delete"
+                    variant="small"
                     @modal-close="confirmDeleteModalVisible = false"
             >
-                <p>Are you sure you want to delete this customer's store credit and all the history?</p>
-                <br>
-
-                <sw-button
-                        @click="deleteStoreCredit"
-                        size="small"
-                        variant="danger"
-                >
-                    Confirm
-                </sw-button>
-                <sw-button
-                        @click="confirmDeleteModalVisible = false"
-                        size="small"
-                        variant="primary"
-                >
-                    Cancel
-                </sw-button>
+                <template #modal-header>
+                    <h3 class="sw-modal__title">
+                        <sw-icon name="regular-exclamation-triangle" size="24px" color="#de294c"></sw-icon>
+                        Confirm Delete
+                    </h3>
+                </template>
+                <p class="sw-modal__body-text">
+                    Are you sure you want to delete this customer's store credit and all the history? 
+                    This action cannot be undone.
+                </p>
+                <template #modal-footer>
+                    <sw-button
+                            @click="confirmDeleteModalVisible = false"
+                            size="small"
+                    >
+                        Cancel
+                    </sw-button>
+                    <sw-button
+                            @click="deleteStoreCredit"
+                            size="small"
+                            variant="danger"
+                    >
+                        <sw-icon name="regular-trash" size="16px"></sw-icon>
+                        Delete
+                    </sw-button>
+                </template>
             </sw-modal>
+
+            <!-- Add Customer Credit Modal -->
             <sw-modal
                     v-if="addCustomerModalVisible"
                     title="Add Customer Store Credit"
                     @modal-close="addCustomerModalVisible = false"
                     size="large"
             >
-                 <sw-customer-grid v-model:value="selectedNewCustomer"/>
-                 <sw-card title="Amount">
-                <sw-number-field
-                        v-model:value="newCustomerAmount"
-                        :min="0.00"
-                        :step="0.00"
-                        :number-type="'float'"
-                        placeholder="Enter amount"
-                />
+                <sw-customer-grid v-model:value="selectedNewCustomer"/>
+                <sw-card title="Amount">
+                    <sw-number-field
+                            v-model:value="newCustomerAmount"
+                            :min="0.00"
+                            :step="0.00"
+                            :number-type="'float'"
+                            placeholder="Enter amount"
+                    />
                 </sw-card>
                 <template #modal-footer>
-                <sw-button @click="addCustomerCredit" size="small" variant="primary">
-                    Submit
-                </sw-button>
-                <sw-button @click="addCustomerModalVisible = false" size="small" variant="danger">
-                    Cancel
-                </sw-button>
+                    <sw-button @click="addCustomerCredit" size="small" variant="primary">
+                        Submit
+                    </sw-button>
+                    <sw-button @click="addCustomerModalVisible = false" size="small" variant="danger">
+                        Cancel
+                    </sw-button>
                 </template>
             </sw-modal>
         </template>

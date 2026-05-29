@@ -1,16 +1,24 @@
 <?php
 
-namespace StoreCredit\Core\Checkout\Cart\Processor;
+namespace Solu1StoreCredit\Core\Checkout\Cart\Processor;
 
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\CartBehavior;
 use Shopware\Core\Checkout\Cart\CartProcessorInterface;
 use Shopware\Core\Checkout\Cart\LineItem\CartDataCollection;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
+use Shopware\Core\System\SystemConfig\SystemConfigService;
+use Solu1StoreCredit\Constants\StoreCreditConstants;
 
 class ValidateStoreCreditCartProcessor implements CartProcessorInterface
 {
     private const FLAG = 'store-credit-validation.already-processed';
+    private SystemConfigService $systemConfigService;
+
+    public function __construct(SystemConfigService $systemConfigService)
+    {
+        $this->systemConfigService = $systemConfigService;
+    }
 
     public function process(
         CartDataCollection $data,
@@ -23,49 +31,41 @@ class ValidateStoreCreditCartProcessor implements CartProcessorInterface
             return;
         }
 
-        if (!$this->shouldProcessCart()) {
+        $storeCreditLineItem = $toCalculate->getLineItems()->get(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID);
+
+        if (!$storeCreditLineItem) {
+            $data->set(self::FLAG, true);
             return;
         }
 
         if ($this->hasPremiumProtectionFee($toCalculate)) {
+            $toCalculate->getLineItems()->remove(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID);
+            $data->set(self::FLAG, true);
             return;
         }
 
-        if ($context->getCustomer() && $context->getCustomer()->getAccountType() === 'private') {
-            $shippingRate = $toCalculate->getDeliveries()->getShippingCosts()->getCalculatedTaxes()->first();
-            $shippingTax = $toCalculate->getDeliveries()->getShippingCosts()->getCalculatedTaxes()->first();
-            $unitPrice = $toCalculate->getDeliveries()->getShippingCosts()->first();
+        if ($this->hasRestrictedProducts($toCalculate, $context)) {
+            $toCalculate->getLineItems()->remove(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID);
+            $data->set(self::FLAG, true);
+            return;
+        }
 
-            if ($shippingRate) {
-                $shippingRate = $shippingRate->getTaxRate();
-            }
-            if ($shippingTax) {
-                $shippingTax = $shippingTax->getTax();
-            }
-            if ($unitPrice) {
-                $unitPrice = $unitPrice->getUnitPrice();
-            }
-
-            if ($shippingRate > 0 && $unitPrice > 0 && $shippingTax == 0) {
+        $storeCreditPrice = $storeCreditLineItem->getPrice();
+        if ($storeCreditPrice) {
+            $appliedCreditAmount = abs($storeCreditPrice->getTotalPrice());
+            $maxCreditPerOrder = $this->systemConfigService->get('StoreCredit.config.maxCreditPerOrder', $context->getSalesChannelId());
+            
+            if ($maxCreditPerOrder > 0 && $appliedCreditAmount > $maxCreditPerOrder) {
+                $toCalculate->getLineItems()->remove(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID);
+                $data->set(self::FLAG, true);
                 return;
             }
         }
 
-        $rawTotal = $toCalculate->getPrice()->getRawTotal();
-        $total = $toCalculate->getPrice()->getTotalPrice();
-        $rawOriginalTotal = $original->getPrice()->getRawTotal();
-        $originalTotal = $original->getPrice()->getTotalPrice();
+        $cartTotalWithoutCredit = $this->getCartTotalWithoutStoreCredit($toCalculate);
 
-        $highestCartTotal = max($rawTotal, $total, $rawOriginalTotal, $originalTotal);
-        $hasOnlyStoreCredit = $this->hasOnlyStoreCreditItems($toCalculate);
-
-        if ($highestCartTotal < 0 || $hasOnlyStoreCredit) {
-            foreach ($toCalculate->getLineItems() as $lineItem) {
-                if ($lineItem->getType() !== 'credit') {
-                    continue;
-                }
-                $toCalculate->getLineItems()->removeElement($lineItem);
-            }
+        if ($cartTotalWithoutCredit <= 0) {
+            $toCalculate->getLineItems()->remove(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID);
         }
 
         $data->set(self::FLAG, true);
@@ -81,30 +81,36 @@ class ValidateStoreCreditCartProcessor implements CartProcessorInterface
         return false;
     }
 
-
-    private function hasOnlyStoreCreditItems(Cart $cart): bool
+    private function hasRestrictedProducts(Cart $cart, SalesChannelContext $context): bool
     {
-        $lineItems = $cart->getLineItems();
-        if ($lineItems->count() === 0) {
+        $restrictedProductIds = $this->systemConfigService->get('StoreCredit.config.restrictedProducts', $context->getSalesChannelId());
+        if (empty($restrictedProductIds)) {
             return false;
         }
 
-        foreach ($lineItems as $lineItem) {
-            if ($lineItem->getType() !== 'credit') {
-                return false;
+        foreach ($cart->getLineItems() as $lineItem) {
+            if (in_array($lineItem->getReferencedId(), $restrictedProductIds)) {
+                return true;
             }
         }
 
-        return true;
+        return false;
     }
 
-    private function shouldProcessCart(): bool
+    private function getCartTotalWithoutStoreCredit(Cart $cart): float
     {
-        $currentPage = $_SERVER['REQUEST_URI'] ?? '';
-        $allowedPages = ['checkout/cart', 'checkout/confirm', 'checkout/order'];
+        $total = 0.0;
 
-        $containsAllowedPage = array_filter($allowedPages, fn($page) => str_contains($currentPage, $page));
+        foreach ($cart->getLineItems() as $lineItem) {
+            if ($lineItem->getId() === StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID) {
+                continue;
+            }
+            $price = $lineItem->getPrice();
+            if ($price) {
+                $total += $price->getTotalPrice();
+            }
+        }
 
-        return preg_match('#^/api/_action/order/#', $currentPage) || !empty($containsAllowedPage);
+        return $total;
     }
 }

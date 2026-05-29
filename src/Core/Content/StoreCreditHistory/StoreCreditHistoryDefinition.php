@@ -1,6 +1,6 @@
 <?php
 
-namespace StoreCredit\Core\Content\StoreCreditHistory;
+namespace Solu1StoreCredit\Core\Content\StoreCreditHistory;
 
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\Required;
 use Shopware\Core\Checkout\Order\OrderDefinition;
@@ -10,16 +10,17 @@ use Shopware\Core\Framework\DataAbstractionLayer\Field\FkField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\PrimaryKey;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\FloatField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\IdField;
+use Shopware\Core\Framework\DataAbstractionLayer\Field\ManyToOneAssociationField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\StringField;
 use Shopware\Core\System\Currency\CurrencyDefinition;
 use Shopware\Core\Framework\DataAbstractionLayer\FieldCollection;
-use StoreCredit\Core\Content\StoreCredit\StoreCreditDefinition;
+use Solu1StoreCredit\Core\Content\StoreCredit\StoreCreditDefinition;
 
 class StoreCreditHistoryDefinition extends EntityDefinition
 {
     public function getEntityName(): string
     {
-        return 'store_credit_history';
+        return 'solu1_store_credit_history';
     }
 
     public function getEntityClass(): string
@@ -44,6 +45,8 @@ class StoreCreditHistoryDefinition extends EntityDefinition
             (new StringField('action_type', 'actionType'))->addFlags(new Required()),
             (new DateTimeField('created_at', 'createdAt'))->addFlags(new Required()),
             (new DateTimeField('updated_at', 'updatedAt'))->addFlags(new Required()),
+
+            new ManyToOneAssociationField('currency', 'currency_id', CurrencyDefinition::class, 'id'),
         ]);
     }
 }

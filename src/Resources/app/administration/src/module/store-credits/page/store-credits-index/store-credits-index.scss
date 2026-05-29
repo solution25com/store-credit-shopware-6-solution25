@@ -1,6 +1,87 @@
-.smart-bar__header{
-  display: flex;
-  justify-content: space-between;
+.smart-bar__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.store-credits-index {
+    .sw-data-grid {
+        border-radius: 4px;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    .sw-button {
+        margin: 0 4px;
+        
+        &.sw-button--success {
+            background-color: #37d046;
+            border-color: #37d046;
+            
+            &:hover {
+                background-color: #2eb83a;
+            }
+        }
+    }
+
+    .store-credit-balance {
+        display: inline-flex;
+        align-items: center;
+        font-weight: 600;
+        color: #189eff;
+        
+        .balance-icon {
+            margin-right: 6px;
+            color: #37d046;
+        }
+    }
+
+    .sw-modal {
+        .sw-modal__body {
+            padding: 20px;
+        }
+
+        .sw-modal__title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+        }
+
+        .sw-modal__body-text {
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .sw-number-field,
+        .sw-text-field {
+            margin-bottom: 16px;
+        }
+
+        .sw-button {
+            margin-top: 12px;
+            margin-right: 8px;
+        }
+    }
+}
+
+.sw-page__header-add-credit-button {
+    margin-left: auto;
+}
+
+.customer-name-link {
+    color: #189eff;
+    text-decoration: none;
+    transition: color 0.2s ease;
+
+    &:hover {
+        color: #0d7dd8;
+        text-decoration: underline;
+    }
+
+    .customer-name {
+        color: inherit;
+    }
 }
 
 

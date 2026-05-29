@@ -12,13 +12,6 @@
             <default>0</default>
             <helpText lang="en-GB">Maximum store credit amount that can be applied per order (0 = no limit)</helpText>
         </input-field>
-        
-        <input-field type="int">
-            <name>maxCreditPercentage</name>
-            <label lang="en-GB">Maximum credit percentage per order</label>
-            <default>100</default>
-            <helpText lang="en-GB">Maximum percentage of order subtotal that can be covered by store credit (0-100)</helpText>
-        </input-field>
     </card>
 
     <card>
@@ -39,16 +32,6 @@
         <label lang="en-GB">Run Order State Installer</label>
         <helpText lang="en-GB">Toggle and save to execute the order state installation command.</helpText>
     </input-field>
-    </card>
-
-    <card>
-        <title> Post Purchase Features</title>
-        <input-field type="bool">
-            <name>postPurchaseFeatures</name>
-            <label lang="en-GB">Enable the post purchase features</label>
-            <default>false</default>
-            <helpText lang="en-GB">Toggle and save to enable the Post Purchase Features for orders paid with Credit card or ACH eCheck.</helpText>
-        </input-field>
     </card>
 
     <card>

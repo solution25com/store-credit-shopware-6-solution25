@@ -1,9 +1,10 @@
 <?php
 
-namespace StoreCredit\Core\Content\StoreCreditHistory;
+namespace Solu1StoreCredit\Core\Content\StoreCreditHistory;
 
 use Shopware\Core\Framework\DataAbstractionLayer\Entity;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityIdTrait;
+use Shopware\Core\System\Currency\CurrencyEntity;
 
 class StoreCreditHistoryEntity extends Entity
 {
@@ -30,9 +31,14 @@ class StoreCreditHistoryEntity extends Entity
     protected $amount;
 
     /**
-     * @var string
+     * @var string|null
      */
     protected ?string $currencyId = null;
+
+    /**
+     * @var CurrencyEntity|null
+     */
+    protected ?CurrencyEntity $currency = null;
 
     /**
      * @var string
@@ -122,5 +128,15 @@ class StoreCreditHistoryEntity extends Entity
     public function setActionType(string $actionType): void
     {
         $this->actionType = $actionType;
+    }
+
+    public function getCurrency(): ?CurrencyEntity
+    {
+        return $this->currency;
+    }
+
+    public function setCurrency(?CurrencyEntity $currency): void
+    {
+        $this->currency = $currency;
     }
 }

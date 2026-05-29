@@ -1,6 +1,6 @@
 <?php
 
-namespace StoreCredit\Storefront\Controller;
+namespace Solu1StoreCredit\Storefront\Controller;
 
 use Shopware\Core\Checkout\Cart\LineItem\LineItem;
 use Shopware\Core\Checkout\Cart\Price\Struct\AbsolutePriceDefinition;
@@ -13,6 +13,7 @@ use Shopware\Core\Framework\Log\Package;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Shopware\Storefront\Controller\StorefrontController;
+use Solu1StoreCredit\Constants\StoreCreditConstants;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -25,7 +26,7 @@ class StoreCreditApplyController extends StorefrontController
     private CartService $cartService;
     private EntityRepository $storeCreditRepository;
     private SystemConfigService $systemConfigurationService;
-    private string $storeCreditLineItemId = 'store-credit-discount';
+    private string $storeCreditLineItemId = StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID;
 
     public function __construct(
         CartService $cartService,
@@ -64,12 +65,11 @@ class StoreCreditApplyController extends StorefrontController
         $amountToApply = min($creditBalance, $amount);
 
         $cart = $this->cartService->getCart($context->getToken(), $context);
-        $lineItems = $cart->getLineItems()->filterType(LineItem::CREDIT_LINE_ITEM_TYPE);
-        $storeCreditDiscount = $lineItems->get($this->storeCreditLineItemId);
+        $storeCreditDiscount = $cart->getLineItems()->get($this->storeCreditLineItemId);
         $totalAppliedCredit = 0;
 
-        foreach ($lineItems as $lineItem) {
-            $totalAppliedCredit += abs($lineItem->getPrice()->getTotalPrice());
+        if ($storeCreditDiscount && $storeCreditDiscount->getPrice()) {
+            $totalAppliedCredit = abs($storeCreditDiscount->getPrice()->getTotalPrice());
         }
 
         $maxCreditPerOrder = $this->systemConfigurationService->get('StoreCredit.config.maxCreditPerOrder', $context->getSalesChannelId());
@@ -97,11 +97,12 @@ class StoreCreditApplyController extends StorefrontController
             $storeCreditDiscount->setPriceDefinition(new AbsolutePriceDefinition($newPrice));
         } else {
             $discount = new LineItem($this->storeCreditLineItemId, LineItem::CREDIT_LINE_ITEM_TYPE, null, 1);
-            $discount->setLabel('Store credit discount');
+            $discount->setLabel(StoreCreditConstants::STORE_CREDIT_DISCOUNT_LABEL);
             $discount->setRemovable(true);
             $discount->setStackable(true);
             $discount->setPriceDefinition(new AbsolutePriceDefinition(-$amountToApply));
             $discount->setGood(false);
+            $discount->setPayloadValue(StoreCreditConstants::PAYLOAD_KEY, true);
             $this->cartService->add($cart, $discount, $context);
         }
 

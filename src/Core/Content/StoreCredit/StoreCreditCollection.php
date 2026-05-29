@@ -1,6 +1,6 @@
 <?php
 
-namespace StoreCredit\Core\Content\StoreCredit;
+namespace Solu1StoreCredit\Core\Content\StoreCredit;
 
 use Shopware\Core\Framework\DataAbstractionLayer\EntityCollection;
 
