@@ -68,7 +68,7 @@ class OrderRefundSubscriber implements EventSubscriberInterface
         return $order;
     }
 
-    private function getOrderReturn(string $orderId, Context $context): ?OrderEntity
+    private function getOrderReturn(string $orderId, Context $context): ?object
     {
         if (!$this->orderReturnRepository) {
             return null;
@@ -91,7 +91,7 @@ class OrderRefundSubscriber implements EventSubscriberInterface
         return $paymentState === 'paid';
     }
 
-    private function calculateRefundAmount(?OrderEntity $orderReturn): float
+    private function calculateRefundAmount(?object $orderReturn): float
     {
         if (!$orderReturn) {
             return 0.0;
