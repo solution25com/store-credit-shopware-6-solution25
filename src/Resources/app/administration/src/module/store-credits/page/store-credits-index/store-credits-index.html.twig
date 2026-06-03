@@ -1,5 +1,5 @@
 <template>
-    <sw-page>
+    <sw-page class="store-credits-index">
         <template #smart-bar-header>
             <sw-page-title>Store Credits</sw-page-title>
 
@@ -14,6 +14,16 @@
         </template>
 
         <template #content>
+            <div class="store-credits-index__toolbar">
+                <sw-simple-search-field
+                    v-model:value="term"
+                    size="default"
+                    variant="form"
+                    :placeholder="$tc('store-credits.listing.searchPlaceholder')"
+                    @search-term-change="onSearch"
+                />
+            </div>
+
             <sw-data-grid
                     :dataSource="storeCredits"
                     :columns="columns"

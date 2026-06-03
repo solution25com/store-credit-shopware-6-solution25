@@ -32,6 +32,7 @@ Component.register('store-credits-index', {
             selectedStoreCredit: null,
             newCustomerAmount: 0,
             total: 0,
+            term: '',
             columns: [
                 { property: 'customerFullName', label: 'Customer Full Name', allowResize: true, sortable: true },
                 { property: 'balance', label: 'Balance', allowResize: true },
@@ -57,7 +58,10 @@ Component.register('store-credits-index', {
         if (this.$route.query.limit) {
             this.limit = parseInt(this.$route.query.limit, 10) || 10;
         }
-        
+        if (this.$route.query.term) {
+            this.term = String(this.$route.query.term);
+        }
+
         this.fetchStoreCredits();
     },
 
@@ -74,6 +78,15 @@ Component.register('store-credits-index', {
                 this.fetchStoreCredits();
             }
         },
+        '$route.query.term'(newTerm, oldTerm) {
+            const term = newTerm ? String(newTerm) : '';
+            if (term === this.term) {
+                return;
+            }
+            this.term = term;
+            this.page = 1;
+            this.fetchStoreCredits();
+        },
     },
 
     methods: {
@@ -84,7 +97,20 @@ Component.register('store-credits-index', {
             criteria.setPage(this.page);
             criteria.setLimit(this.limit);
             criteria.addAssociation('customer');
+            criteria.addAssociation('currency');
             criteria.addSorting(Criteria.sort('createdAt', 'DESC'));
+
+            const searchTerm = (this.term || '').trim();
+            if (searchTerm !== '') {
+                criteria.addFilter(
+                    Criteria.multi('OR', [
+                        Criteria.contains('customer.firstName', searchTerm),
+                        Criteria.contains('customer.lastName', searchTerm),
+                        Criteria.contains('customer.email', searchTerm),
+                        Criteria.contains('customer.customerNumber', searchTerm),
+                    ]),
+                );
+            }
 
             this.repository.search(criteria, Shopware.Context.api)
                 .then((result) => {
@@ -118,6 +144,13 @@ Component.register('store-credits-index', {
                 });
         },
 
+        onSearch(searchTerm) {
+            this.term = searchTerm ? String(searchTerm).trim() : '';
+            this.page = 1;
+            this.updateRouteQuery();
+            this.fetchStoreCredits();
+        },
+
         onPageChange({ page, limit }) {
             this.page = page;
             if (limit) {
@@ -133,13 +166,18 @@ Component.register('store-credits-index', {
         },
 
         updateRouteQuery() {
+            const query = {
+                page: this.page,
+                limit: this.limit,
+            };
+
+            if (this.term) {
+                query.term = this.term;
+            }
+
             this.$router.push({
                 name: this.$route.name,
-                query: {
-                    ...this.$route.query,
-                    page: this.page,
-                    limit: this.limit,
-                },
+                query,
             });
         },
 

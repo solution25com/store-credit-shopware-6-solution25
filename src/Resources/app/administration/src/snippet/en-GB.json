@@ -1,5 +1,8 @@
 {
     "store-credits": {
+        "listing": {
+            "searchPlaceholder": "Search by customer name, email, or customer number..."
+        },
         "customer": {
             "tabTitle": "Store Credits",
             "currentBalance": "Current Balance",

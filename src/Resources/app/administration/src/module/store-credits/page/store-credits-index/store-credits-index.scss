@@ -5,6 +5,18 @@
 }
 
 .store-credits-index {
+    &__toolbar {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        margin-bottom: 24px;
+
+        .sw-simple-search-field {
+            width: 100%;
+            max-width: 520px;
+        }
+    }
+
     .sw-data-grid {
         border-radius: 4px;
         overflow: hidden;
