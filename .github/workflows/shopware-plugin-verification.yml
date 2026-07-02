@@ -1,33 +1,36 @@
 name: Validate Shopware Extension
-
 on:
   push:
     branches: ['**']
     tags: ['v*.*.*']
   pull_request:
     branches: [main, develop]
-
 jobs:
   validate:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        version-selection: [ 'lowest', 'highest' ]
-
+        version-selection: ['lowest', 'highest']
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install Shopware CLI
-        uses: shopware/shopware-cli-action@v1
+        uses: shopware/shopware-cli-action@v3
+
+      - name: Build extension zip (cached)
+        id: zip
+        uses: shopware/build-extension-zip-action@v1
+        with:
+          path: .
+          output-directory: .build
+          disable-git: true
 
       - name: Validate Extension (${{ matrix.version-selection }})
         shell: bash
         run: |
-          # Run the Shopware CLI extension validation.
-          # Use --full to run all checks, and --check-against from matrix (lowest/highest).
-          if shopware-cli extension validate --full --check-against ${{ matrix.version-selection }} .; then
+          if shopware-cli extension validate --full --check-against ${{ matrix.version-selection }} --reporter summary ${{ steps.zip.outputs.zip }}; then
             echo "### ✅ Extension Validator Passed (${{ matrix.version-selection }})"
           else
             echo "### ❌ Extension Validator Failed (${{ matrix.version-selection }})"

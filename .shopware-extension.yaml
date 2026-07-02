@@ -1,0 +1,5 @@
+build:
+  zip:
+    assets:
+      enabled: true
+      enable_asset_caching: true
