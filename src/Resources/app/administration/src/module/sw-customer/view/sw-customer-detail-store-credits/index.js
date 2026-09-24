@@ -5,247 +5,85 @@ const { Component, Mixin } = Shopware;
 
 Component.register('sw-customer-detail-store-credits', {
     template,
-
-    inject: ['httpClient', 'repositoryFactory'],
-
+    inject: ['storeCreditApiService', 'repositoryFactory', 'acl'],
     mixins: [Mixin.getByName('notification')],
-
     props: {
-        customer: {
-            type: Object,
-            required: true,
-        },
-        customerEditMode: {
-            type: Boolean,
-            required: false,
-            default: false,
-        },
+        customer: { type: Object, required: true },
+        customerEditMode: { type: Boolean, default: false },
     },
-
     data() {
         return {
-            isLoading: false,
-            balance: 0.0,
-            currencyId: null,
-            currencyIsoCode: 'EUR',
-            addAmount: null,
-            deductAmount: null,
-            addReason: '',
-            deductReason: '',
-            showAddModal: false,
-            showDeductModal: false,
+            isLoading: false, isSaving: false, balance: 0, currencyId: null,
+            currencyIsoCode: Shopware.Context.app.systemCurrencyISOCode || 'EUR',
+            addAmount: null, deductAmount: null, addReason: '', deductReason: '',
+            showAddModal: false, showDeductModal: false, loadSequence: 0,
         };
     },
-
-    created() {
-        this.loadStoreCreditBalance();
-    },
-
     watch: {
-        customer() {
-            this.loadStoreCreditBalance();
+        'customer.id': {
+            immediate: true,
+            handler() {
+                this.closeAddModal();
+                this.closeDeductModal();
+                this.loadStoreCreditBalance();
+            },
         },
     },
-
     methods: {
         async loadStoreCreditBalance() {
-            if (!this.customer?.id) {
-                return;
-            }
-
+            const sequence = ++this.loadSequence;
+            this.balance = 0;
+            this.currencyId = null;
+            this.currencyIsoCode = Shopware.Context.app.systemCurrencyISOCode || 'EUR';
+            this.isLoading = false;
+            if (!this.customer?.id) return;
             this.isLoading = true;
             try {
-                const response = await fetch(`/api/store-credit/balance?customerId=${this.customer.id}`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'Authorization': `Bearer ${Shopware.Context.api.authToken.access}`,
-                    },
-                });
-
-                const data = await response.json();
-                if (data.success) {
-                    this.balance = parseFloat(data.balance) || 0.0;
-                    this.currencyId = data.currencyId;
-                    await this.loadCurrencyIsoCode();
-                }
+                const data = await this.storeCreditApiService.balance(this.customer.id);
+                const currency = data.currencyId
+                    ? await this.repositoryFactory.create('currency').get(data.currencyId, Shopware.Context.api) : null;
+                if (sequence !== this.loadSequence) return;
+                this.balance = Number(data.balance) || 0;
+                this.currencyId = data.currencyId;
+                this.currencyIsoCode = currency?.isoCode || Shopware.Context.app.systemCurrencyISOCode || 'EUR';
             } catch (error) {
-                console.error('Error loading store credit balance:', error);
+                if (sequence === this.loadSequence) {
+                    this.createNotificationError({ message: error.response?.data?.message || 'Could not load store credit.' });
+                }
             } finally {
-                this.isLoading = false;
+                if (sequence === this.loadSequence) this.isLoading = false;
             }
         },
-
-        openAddModal() {
-            this.addAmount = null;
-            this.addReason = '';
-            this.showAddModal = true;
-        },
-
-        closeAddModal() {
-            this.showAddModal = false;
-            this.addAmount = null;
-            this.addReason = '';
-        },
-
-        openDeductModal() {
-            this.deductAmount = null;
-            this.deductReason = '';
-            this.showDeductModal = true;
-        },
-
-        closeDeductModal() {
-            this.showDeductModal = false;
-            this.deductAmount = null;
-            this.deductReason = '';
-        },
-
-        async addCredit() {
-            if (!this.addAmount || this.addAmount <= 0) {
-                this.createNotificationError({
-                    title: 'Error',
-                    message: 'Amount must be greater than zero.',
-                });
+        openAddModal() { this.addAmount = null; this.addReason = ''; this.showAddModal = true; },
+        closeAddModal() { this.showAddModal = false; },
+        openDeductModal() { this.deductAmount = null; this.deductReason = ''; this.showDeductModal = true; },
+        closeDeductModal() { this.showDeductModal = false; },
+        addCredit() { return this.adjustCredit('add', this.addAmount, this.addReason); },
+        deductCredit() { return this.adjustCredit('deduct', this.deductAmount, this.deductReason); },
+        async adjustCredit(action, value, reason) {
+            if (this.isSaving || this.isLoading || !this.customer?.id || !this.acl.can('store_credit.editor')) return;
+            const amount = Number(value);
+            if (!Number.isFinite(amount) || amount <= 0 || (action === 'deduct' && amount > this.balance)) {
+                this.createNotificationError({ message: 'Enter a positive amount within the available balance.' });
                 return;
             }
-            const amount = parseFloat(this.addAmount);
-            if (isNaN(amount) || amount <= 0) {
-                this.createNotificationError({
-                    title: 'Error',
-                    message: 'Amount must be greater than zero.',
-                });
-                return;
-            }
-
-            this.isLoading = true;
+            this.isSaving = true;
             try {
-                const response = await fetch('/api/store-credit/add', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'Authorization': `Bearer ${Shopware.Context.api.authToken.access}`,
-                    },
-                    body: JSON.stringify({
-                        customerId: this.customer.id,
-                        amount: amount,
-                        reason: this.addReason || 'Admin added store credit',
-                    }),
-                });
-
-                const data = await response.json();
-                if (data.success) {
-                    this.createNotificationSuccess({
-                        title: 'Success',
-                        message: 'Store credit added successfully!',
-                    });
-                    this.closeAddModal();
-                    await this.loadStoreCreditBalance();
-                } else {
-                    throw new Error(data.message || 'Failed to add store credit.');
-                }
+                await this.storeCreditApiService.adjust(action, this.customer.id, amount, reason || 'Admin update', this.currencyId);
+                this.createNotificationSuccess({ message: 'Store credit updated successfully.' });
+                this.closeAddModal();
+                this.closeDeductModal();
+                await this.loadStoreCreditBalance();
             } catch (error) {
-                console.error('Error adding store credit:', error);
-                this.createNotificationError({
-                    title: 'Error',
-                    message: error.message || 'Failed to add store credit.',
-                });
+                this.createNotificationError({ message: error.response?.data?.message || error.message || 'Could not update store credit.' });
             } finally {
-                this.isLoading = false;
+                this.isSaving = false;
             }
         },
-
-        async deductCredit() {
-            if (!this.deductAmount || this.deductAmount <= 0) {
-                this.createNotificationError({
-                    title: 'Error',
-                    message: 'Amount must be greater than zero.',
-                });
-                return;
-            }
-            const amount = parseFloat(this.deductAmount);
-            if (isNaN(amount) || amount <= 0) {
-                this.createNotificationError({
-                    title: 'Error',
-                    message: 'Amount must be greater than zero.',
-                });
-                return;
-            }
-
-            if (amount > this.balance) {
-                this.createNotificationError({
-                    title: 'Error',
-                    message: 'Amount cannot exceed current balance.',
-                });
-                return;
-            }
-
-            this.isLoading = true;
-            try {
-                const response = await fetch('/api/store-credit/deduct', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'Authorization': `Bearer ${Shopware.Context.api.authToken.access}`,
-                    },
-                    body: JSON.stringify({
-                        customerId: this.customer.id,
-                        amount: amount,
-                        reason: this.deductReason || 'Admin deducted store credit',
-                    }),
-                });
-
-                const data = await response.json();
-                if (data.success) {
-                    this.createNotificationSuccess({
-                        title: 'Success',
-                        message: 'Store credit deducted successfully!',
-                    });
-                    this.closeDeductModal();
-                    await this.loadStoreCreditBalance();
-                } else {
-                    throw new Error(data.message || 'Failed to deduct store credit.');
-                }
-            } catch (error) {
-                console.error('Error deducting store credit:', error);
-                this.createNotificationError({
-                    title: 'Error',
-                    message: error.message || 'Failed to deduct store credit.',
-                });
-            } finally {
-                this.isLoading = false;
-            }
-        },
-
-        async loadCurrencyIsoCode() {
-            if (!this.currencyId) {
-                this.currencyIsoCode = Shopware.Context.app.systemCurrencyISOCode || 'EUR';
-                return;
-            }
-
-            try {
-                const currencyRepository = this.repositoryFactory.create('currency');
-                const currency = await currencyRepository.get(this.currencyId, Shopware.Context.api);
-                if (currency && currency.isoCode) {
-                    this.currencyIsoCode = currency.isoCode;
-                } else {
-                    this.currencyIsoCode = Shopware.Context.app.systemCurrencyISOCode || 'EUR';
-                }
-            } catch (error) {
-                console.error('Error loading currency:', error);
-                this.currencyIsoCode = Shopware.Context.app.systemCurrencyISOCode || 'EUR';
-            }
-        },
-
         formatCurrency(value) {
-            const locale = Shopware.Context.app.locale?.replace('_', '-') || 'en-US';
-            return new Intl.NumberFormat(locale, {
-                style: 'currency',
-                currency: this.currencyIsoCode,
+            return new Intl.NumberFormat(Shopware.Context.app.locale?.replace('_', '-') || 'en-GB', {
+                style: 'currency', currency: this.currencyIsoCode,
             }).format(value);
         },
     },
 });
-

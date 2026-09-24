@@ -1,0 +1,11 @@
+{
+  "main.js": {
+    "file": "assets/store-credit-B6sn8wrI.js",
+    "name": "store-credit",
+    "src": "main.js",
+    "isEntry": true,
+    "css": [
+      "assets/store-credit-BmliWCKX.css"
+    ]
+  }
+}

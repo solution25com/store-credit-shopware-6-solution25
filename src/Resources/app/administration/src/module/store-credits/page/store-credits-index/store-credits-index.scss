@@ -23,13 +23,13 @@
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
     }
 
-    .sw-button {
+    .mt-button {
         margin: 0 4px;
-        
-        &.sw-button--success {
+
+        &.mt-button--success {
             background-color: #37d046;
             border-color: #37d046;
-            
+
             &:hover {
                 background-color: #2eb83a;
             }
@@ -41,7 +41,7 @@
         align-items: center;
         font-weight: 600;
         color: #189eff;
-        
+
         .balance-icon {
             margin-right: 6px;
             color: #37d046;
@@ -65,12 +65,12 @@
             line-height: 1.6;
         }
 
-        .sw-number-field,
-        .sw-text-field {
+        .mt-number-field,
+        .mt-text-field {
             margin-bottom: 16px;
         }
 
-        .sw-button {
+        .mt-button {
             margin-top: 12px;
             margin-right: 8px;
         }

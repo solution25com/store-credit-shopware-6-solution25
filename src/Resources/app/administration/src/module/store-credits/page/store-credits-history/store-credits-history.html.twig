@@ -1,31 +1,30 @@
-<template>
-    <sw-page>
+<sw-page>
         <template #smart-bar-header>
             <div class="sw-page__smart-bar">
-                <sw-button
+                <mt-button
                         size="small"
-                        variant="ghost"
+                        variant="secondary"
                         @click="goBack"
                 >
                     Back
-                </sw-button>
+                </mt-button>
 
-                <sw-page-title>Store Credit History</sw-page-title>
+                <h2>Store Credit History</h2>
             </div>
         </template>
 
         <template #content>
-            <sw-card class="store-credit-history-card">
+            <mt-card class="store-credit-history-card">
                 <template #header>
                     <div class="customer-details-header">
-                        <sw-button
+                        <mt-button
                                 size="small"
-                                variant="ghost"
+                                variant="secondary"
                                 @click="goBack"
                         >
-                            <sw-icon name="regular-arrow-left" size="16px"></sw-icon>
+                            <mt-icon name="regular-arrow-left" :size="16"></mt-icon>
                             Back to Store Credits
-                        </sw-button>
+                        </mt-button>
                     </div>
                 </template>
 
@@ -33,7 +32,7 @@
                     <div class="customer-info-content">
                         <div class="customer-name-section">
                             <div>
-                                <router-link 
+                                <router-link
                                     v-if="customerId"
                                     :to="{ name: 'sw.customer.detail', params: { id: customerId } }"
                                     class="customer-name-link"
@@ -42,19 +41,19 @@
                                 </router-link>
                                 <h2 v-else class="customer-name">{{ customerName }}</h2>
                                 <p class="customer-balance">
-                                    <sw-icon name="regular-wallet" size="16px"></sw-icon>
+                                    <mt-icon name="regular-wallet" :size="16"></mt-icon>
                                     Current Balance: <strong>{{ formatCurrency(customerBalance, currencyIsoCode) }}</strong>
                                 </p>
                             </div>
                         </div>
                     </div>
                 </div>
-            </sw-card>
+            </mt-card>
 
-            <sw-card class="history-card">
+            <mt-card class="history-card">
                 <template #header>
                     <h3 class="history-title">
-                        <sw-icon name="regular-clock" size="20px"></sw-icon>
+                        <mt-icon name="regular-clock" :size="20"></mt-icon>
                         Transaction History
                     </h3>
                 </template>
@@ -77,7 +76,7 @@
                 >
                     <template #column-createdAt="{ item }">
                         <div class="date-cell">
-                            <sw-icon name="regular-calendar" size="14px"></sw-icon>
+                            <mt-icon name="regular-calendar" :size="14"></mt-icon>
                             {{ formatDate(item.createdAt) }}
                         </div>
                     </template>
@@ -100,10 +99,10 @@
                                 appearance="pill"
                                 size="small"
                         >
-                            <sw-icon 
-                                    :name="item.actionType === 'add' ? 'regular-check-circle' : 'regular-times-circle'" 
-                                    size="12px"
-                            ></sw-icon>
+                            <mt-icon
+                                    :name="item.actionType === 'add' ? 'regular-check-circle' : 'regular-times-circle'"
+                                    :size="12"
+                            ></mt-icon>
                             {{ item.actionType === 'add' ? 'Added' : 'Deducted' }}
                         </sw-label>
                     </template>
@@ -119,7 +118,6 @@
                         />
                     </template>
                 </sw-data-grid>
-            </sw-card>
+            </mt-card>
         </template>
     </sw-page>
-</template>

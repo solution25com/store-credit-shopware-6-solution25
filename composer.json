@@ -2,7 +2,7 @@
     "name": "solution25/store-credit",
     "description": "Store Credit for Shopware 6",
     "type": "shopware-platform-plugin",
-    "version": "1.1.2",
+    "version": "1.2.0",
     "license": "MIT",
     "authors": [
         {
@@ -11,12 +11,14 @@
         }
     ],
     "require": {
-        "shopware/core": "~6.6.0",
-        "shopware/storefront": "~6.6.0"
+        "php": "^8.2",
+        "shopware/core": "~6.7.0",
+        "shopware/storefront": "~6.7.0"
     },
     "require-dev": {
         "squizlabs/php_codesniffer": "^4.0",
-        "phpstan/phpstan": "^2.1"
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^11.5"
     },
     "extra": {
         "shopware-plugin-class": "Solu1StoreCredit\\StoreCredit",
@@ -25,7 +27,7 @@
             "en-GB": "Store Credit"
         },
         "description": {
-            "de-DE": "Verwalten Sie Guthaben für Retouren einfach. Admins weisen Kundenkonten Guthaben zu, das flexibel für zukünftige Einkäufe genutzt werden kann, bis der Betrag aufgebraucht ist.",
+            "de-DE": "Verwalten Sie Guthaben f\u00fcr Retouren einfach. Admins weisen Kundenkonten Guthaben zu, das flexibel f\u00fcr zuk\u00fcnftige Eink\u00e4ufe genutzt werden kann, bis der Betrag aufgebraucht ist.",
             "en-GB": "Manage store credits for returns easily. Admins allocate credit to customer accounts, usable for future purchases until the balance is fully utilized. Alternative to refunds."
         },
         "manufacturerLink": {
@@ -46,18 +48,6 @@
         "psr-4": {
             "Solu1StoreCredit\\Tests\\": "tests/"
         }
-    },
-    "scripts": {
-        "post-install-cmd": [
-            "@enable-prepush"
-        ],
-        "post-update-cmd": [
-            "@enable-prepush"
-        ],
-        "enable-prepush": [
-            "cp ./pre-push .git/hooks/pre-push",
-            "chmod +x .git/hooks/pre-push"
-        ]
     },
     "config": {
         "allow-plugins": {

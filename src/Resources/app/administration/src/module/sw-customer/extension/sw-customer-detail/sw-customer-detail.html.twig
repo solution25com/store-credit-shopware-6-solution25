@@ -2,12 +2,12 @@
 {% parent %}
 
 <sw-tabs-item
-    v-if="storeCreditsRoute"
+    v-if="storeCreditsRoute && acl.can('store_credit.viewer')"
     class="sw-customer-detail__tab-store-credits"
     :route="storeCreditsRoute"
-    :title="$tc('store-credits.customer.tabTitle')"
+    :title="$t('store-credits.customer.tabTitle')"
 >
-    {{ $tc('store-credits.customer.tabTitle') }}
+    {{ $t('store-credits.customer.tabTitle') }}
 </sw-tabs-item>
 {% endblock %}
 

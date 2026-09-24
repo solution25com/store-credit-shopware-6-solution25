@@ -6,13 +6,16 @@ use Shopware\Core\Checkout\Customer\CustomerDefinition;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\ManyToOneAssociationField;
 use Shopware\Core\System\Currency\CurrencyDefinition;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityDefinition;
-use Shopware\Core\Framework\DataAbstractionLayer\Field\DateTimeField;
+use Shopware\Core\Framework\DataAbstractionLayer\Field\CreatedAtField;
+use Shopware\Core\Framework\DataAbstractionLayer\Field\UpdatedAtField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\FkField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\PrimaryKey;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\Required;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\FloatField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\IdField;
 use Shopware\Core\Framework\DataAbstractionLayer\FieldCollection;
+use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\WriteProtected;
+use Shopware\Core\Framework\Context;
 
 class StoreCreditDefinition extends EntityDefinition
 {
@@ -33,16 +36,22 @@ class StoreCreditDefinition extends EntityDefinition
 
     protected function defineFields(): FieldCollection
     {
-        return new FieldCollection([
+        $fields = new FieldCollection([
             (new IdField('id', 'id'))->addFlags(new PrimaryKey(), new Required()),
             (new FkField('customer_id', 'customerId', CustomerDefinition::class, 'id'))->addFlags(new Required()),
             new FkField('currency_id', 'currencyId', CurrencyDefinition::class, 'id'),
             (new FloatField('balance', 'balance'))->addFlags(new Required()),
-            (new DateTimeField('updated_at', 'updatedAt')),
-            (new DateTimeField('created_at', 'createdAt'))->addFlags(new Required()),
+            new UpdatedAtField(),
+            new CreatedAtField(),
 
             new ManyToOneAssociationField('customer', 'customer_id', CustomerDefinition::class, 'id'),
             new ManyToOneAssociationField('currency', 'currency_id', CurrencyDefinition::class, 'id'),
         ]);
+        foreach ($fields as $field) {
+            if (in_array($field->getPropertyName(), ['customerId', 'currencyId', 'balance', 'storeCreditId', 'orderId', 'amount', 'reason', 'actionType', 'operationKey'], true)) {
+                $field->addFlags(new WriteProtected(Context::SYSTEM_SCOPE));
+            }
+        }
+        return $fields;
     }
 }

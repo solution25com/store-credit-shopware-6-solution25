@@ -1,16 +1,15 @@
-<template>
-    <sw-page class="store-credits-index">
+<sw-page class="store-credits-index">
         <template #smart-bar-header>
             <sw-page-title>Store Credits</sw-page-title>
 
-            <sw-button
+            <mt-button
                     size="small"
                     variant="primary"
-                    @click="openAddCustomerModal"
+                    :disabled="isSaving || !acl.can('store_credit.editor')" @click="openAddCustomerModal"
                     class="sw-page__header-add-credit-button"
             >
                 Add Customer Credit
-            </sw-button>
+            </mt-button>
         </template>
 
         <template #content>
@@ -19,7 +18,7 @@
                     v-model:value="term"
                     size="default"
                     variant="form"
-                    :placeholder="$tc('store-credits.listing.searchPlaceholder')"
+                    :placeholder="$t('store-credits.listing.searchPlaceholder')"
                     @search-term-change="onSearch"
                 />
             </div>
@@ -38,7 +37,7 @@
             >
                 <!-- Columns -->
                 <template #column-customerFullName="{ item }">
-                    <router-link 
+                    <router-link
                         :to="{ name: 'sw.customer.detail', params: { id: item.customerId } }"
                         class="customer-name-link"
                     >
@@ -48,28 +47,28 @@
 
                 <template #column-balance="{ item }">
                     <span class="store-credit-balance">
-                        <sw-icon name="regular-wallet" size="16px" class="balance-icon"></sw-icon>
+                        <mt-icon name="regular-wallet" :size="16" class="balance-icon"></mt-icon>
                         {{ formatCurrency(item.balance, item.currencyIsoCode) }}
                     </span>
                 </template>
 
                 <template #column-actions="{ item }">
-                    <sw-button
+                    <mt-button
                             size="small"
-                            variant="success"
-                            @click="openAddBalanceModal(item)"
+                            variant="primary"
+                            :disabled="isSaving || !acl.can('store_credit.editor')" @click="openAddBalanceModal(item)"
                     >
-                        <sw-icon name="regular-plus-circle" size="16px"></sw-icon>
+                        <mt-icon name="regular-plus-circle" :size="16"></mt-icon>
                         Add Balance
-                    </sw-button>
-                    <sw-button
+                    </mt-button>
+                    <mt-button
                             size="small"
-                            variant="danger"
-                            @click="openDeductBalanceModal(item)"
+                            variant="critical"
+                            :disabled="isSaving || !acl.can('store_credit.editor')" @click="openDeductBalanceModal(item)"
                     >
-                        <sw-icon name="regular-minus-circle" size="16px"></sw-icon>
+                        <mt-icon name="regular-minus-circle" :size="16"></mt-icon>
                         Deduct Balance
-                    </sw-button>
+                    </mt-button>
                 </template>
 
                 <template #actions="{ item }">
@@ -79,7 +78,7 @@
                         View History
                     </sw-context-menu-item>
                     <sw-context-menu-item
-                            @click="openDeleteModal(item)"
+                            :disabled="isSaving || !acl.can('store_credit.deleter')" @click="openDeleteModal(item)"
                             icon="regular-trash"
                             variant="danger"
                     >
@@ -108,12 +107,12 @@
             >
                 <template #modal-header>
                     <h3 class="sw-modal__title">
-                        <sw-icon name="regular-plus-circle" size="24px"></sw-icon>
+                        <mt-icon name="regular-plus-circle" :size="24"></mt-icon>
                         Add Balance
                     </h3>
                 </template>
-                <sw-number-field
-                        v-model:value="amount"
+                <mt-number-field
+                        v-model="amount"
                         label="Amount"
                         :min="0.00"
                         :step="0.01"
@@ -121,19 +120,19 @@
                         placeholder="0.00"
                         required
                 />
-                <sw-text-field 
-                        v-model:value="reason" 
-                        label="Reason" 
+                <mt-text-field
+                        v-model="reason"
+                        label="Reason"
                         placeholder="Enter reason for adding balance"
                 />
                 <template #modal-footer>
-                    <sw-button @click="addBalanceModalVisible = false" size="small">
+                    <mt-button @click="addBalanceModalVisible = false" size="small">
                         Cancel
-                    </sw-button>
-                    <sw-button @click="addBalance" size="small" variant="primary">
-                        <sw-icon name="regular-check" size="16px"></sw-icon>
+                    </mt-button>
+                    <mt-button :disabled="isSaving || !acl.can('store_credit.editor')" @click="addBalance" size="small" variant="primary">
+                        <mt-icon name="regular-check" :size="16"></mt-icon>
                         Add Balance
-                    </sw-button>
+                    </mt-button>
                 </template>
             </sw-modal>
 
@@ -145,12 +144,12 @@
             >
                 <template #modal-header>
                     <h3 class="sw-modal__title">
-                        <sw-icon name="regular-minus-circle" size="24px"></sw-icon>
+                        <mt-icon name="regular-minus-circle" :size="24"></mt-icon>
                         Deduct Balance
                     </h3>
                 </template>
-                <sw-number-field
-                        v-model:value="amount"
+                <mt-number-field
+                        v-model="amount"
                         label="Amount"
                         :min="0.00"
                         :step="0.01"
@@ -158,19 +157,19 @@
                         placeholder="0.00"
                         required
                 />
-                <sw-text-field 
-                        v-model:value="reason" 
-                        label="Reason" 
+                <mt-text-field
+                        v-model="reason"
+                        label="Reason"
                         placeholder="Enter reason for deducting balance"
                 />
                 <template #modal-footer>
-                    <sw-button @click="deductBalanceModalVisible = false" size="small">
+                    <mt-button @click="deductBalanceModalVisible = false" size="small">
                         Cancel
-                    </sw-button>
-                    <sw-button @click="deductBalance" size="small" variant="danger">
-                        <sw-icon name="regular-check" size="16px"></sw-icon>
+                    </mt-button>
+                    <mt-button :disabled="isSaving || !acl.can('store_credit.editor')" @click="deductBalance" size="small" variant="critical">
+                        <mt-icon name="regular-check" :size="16"></mt-icon>
                         Deduct Balance
-                    </sw-button>
+                    </mt-button>
                 </template>
             </sw-modal>
 
@@ -183,29 +182,29 @@
             >
                 <template #modal-header>
                     <h3 class="sw-modal__title">
-                        <sw-icon name="regular-exclamation-triangle" size="24px" color="#de294c"></sw-icon>
+                        <mt-icon name="regular-exclamation-triangle" :size="24" color="#de294c"></mt-icon>
                         Confirm Delete
                     </h3>
                 </template>
                 <p class="sw-modal__body-text">
-                    Are you sure you want to delete this customer's store credit and all the history? 
+                    Are you sure you want to delete this customer's store credit and all the history?
                     This action cannot be undone.
                 </p>
                 <template #modal-footer>
-                    <sw-button
+                    <mt-button
                             @click="confirmDeleteModalVisible = false"
                             size="small"
                     >
                         Cancel
-                    </sw-button>
-                    <sw-button
-                            @click="deleteStoreCredit"
+                    </mt-button>
+                    <mt-button
+                            :disabled="isSaving || !acl.can('store_credit.deleter')" @click="deleteStoreCredit"
                             size="small"
-                            variant="danger"
+                            variant="critical"
                     >
-                        <sw-icon name="regular-trash" size="16px"></sw-icon>
+                        <mt-icon name="regular-trash" :size="16"></mt-icon>
                         Delete
-                    </sw-button>
+                    </mt-button>
                 </template>
             </sw-modal>
 
@@ -217,24 +216,23 @@
                     size="large"
             >
                 <sw-customer-grid v-model:value="selectedNewCustomer"/>
-                <sw-card title="Amount">
-                    <sw-number-field
-                            v-model:value="newCustomerAmount"
+                <mt-card title="Amount">
+                    <mt-number-field
+                            v-model="newCustomerAmount"
                             :min="0.00"
-                            :step="0.00"
+                            :step="0.01"
                             :number-type="'float'"
                             placeholder="Enter amount"
                     />
-                </sw-card>
+                </mt-card>
                 <template #modal-footer>
-                    <sw-button @click="addCustomerCredit" size="small" variant="primary">
+                    <mt-button :disabled="isSaving || !acl.can('store_credit.editor')" @click="addCustomerCredit" size="small" variant="primary">
                         Submit
-                    </sw-button>
-                    <sw-button @click="addCustomerModalVisible = false" size="small" variant="danger">
+                    </mt-button>
+                    <mt-button @click="addCustomerModalVisible = false" size="small" variant="critical">
                         Cancel
-                    </sw-button>
+                    </mt-button>
                 </template>
             </sw-modal>
         </template>
     </sw-page>
-</template>

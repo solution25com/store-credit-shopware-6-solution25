@@ -1,39 +1,9 @@
-<template>
-  <div>
-    <sw-card title="Select Customer">
-      <sw-text-field 
-        v-model:value="searchTerm" 
-        placeholder="Search for customers..." 
-        @input="onSearch"
-      />
-
-      <sw-data-grid
-              :dataSource="customerOptions"
-              :columns="columns"
-              :isLoading="isLoading"
-              :identifier="'id'"
-              :showSelection="true"
-              :selectedItems="selectedItems"
-              @selectItem="onSelectCustomer"
-      >
-
-      <template #column-name="{ item }">
-          {{ item.label }}
-        </template>
-        <template #column-customerNumber="{ item }">
-          {{ item.customerNumber }}
-        </template>
-        <template #column-email="{ item }">
-          {{ item.email }}
-        </template>
-      </sw-data-grid>
-
-       <sw-pagination
-          :total="totalCustomers"
-          :limit="limit"
-          :page="page"
-          @pageChange="onPageChange">
-       </sw-pagination>
-    </sw-card>
-  </div>
-</template>
+<sw-entity-single-select
+    entity="customer"
+    :value="value"
+    :criteria="customerCriteria"
+    :label-property="['firstName', 'lastName']"
+    label="Customer"
+    placeholder="Select a customer"
+    @update:value="$emit('update:value', $event)"
+/>

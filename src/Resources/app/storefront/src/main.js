@@ -1,4 +1,3 @@
-import StoreCreditPlugin from "./store-credit/store-credit.plugin";
+import StoreCreditPlugin from './store-credit/store-credit.plugin';
 
-const PluginManager = window.PluginManager;
-PluginManager.register('StoreCreditPlugin', StoreCreditPlugin, '[data-storecredit-plugin]');
+window.PluginManager.register('StoreCreditPlugin', StoreCreditPlugin, '[data-storecredit-plugin]');

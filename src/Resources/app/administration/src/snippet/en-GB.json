@@ -13,6 +13,12 @@
             "reason": "Reason",
             "reasonPlaceholder": "Enter reason (optional)"
         }
+    },
+    "sw-privileges": {
+        "permissions": {
+            "store_credit": {
+                "label": "Store Credits"
+            }
+        }
     }
 }
-

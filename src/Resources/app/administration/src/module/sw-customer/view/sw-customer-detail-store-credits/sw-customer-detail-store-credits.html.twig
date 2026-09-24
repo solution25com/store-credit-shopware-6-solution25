@@ -1,22 +1,22 @@
 {% block sw_customer_detail_store_credits %}
 <div class="sw-customer-detail-store-credits">
     {% block sw_customer_detail_store_credits_card %}
-    <sw-card
+    <mt-card
         class="sw-customer-detail-store-credits__card"
         :is-loading="isLoading"
-        :title="$tc('store-credits.customer.tabTitle')"
+        :title="$t('store-credits.customer.tabTitle')"
     >
         {% block sw_customer_detail_store_credits_balance %}
         <div class="sw-customer-detail-store-credits__balance-section">
             <div class="sw-customer-detail-store-credits__balance-card">
-                <sw-icon
+                <mt-icon
                     name="regular-wallet"
-                    size="48px"
+                    :size="48"
                     class="sw-customer-detail-store-credits__balance-icon"
                 />
                 <div class="sw-customer-detail-store-credits__balance-info">
                     <div class="sw-customer-detail-store-credits__balance-label">
-                        {{ $tc('store-credits.customer.currentBalance') }}
+                        {{ $t('store-credits.customer.currentBalance') }}
                     </div>
                     <div class="sw-customer-detail-store-credits__balance-amount">
                         {{ formatCurrency(balance) }}
@@ -28,32 +28,32 @@
 
         {% block sw_customer_detail_store_credits_actions %}
         <div class="sw-customer-detail-store-credits__actions">
-            <sw-button
+            <mt-button
                 variant="primary"
-                :disabled="isLoading"
+                :disabled="isSaving || !acl.can('store_credit.editor') || isLoading"
                 @click="openAddModal"
             >
-                <sw-icon name="regular-plus-circle" size="16px" />
-                {{ $tc('store-credits.customer.addCredit') }}
-            </sw-button>
+                <mt-icon name="regular-plus-circle" :size="16" />
+                {{ $t('store-credits.customer.addCredit') }}
+            </mt-button>
 
-            <sw-button
-                variant="danger"
-                :disabled="isLoading || balance <= 0"
+            <mt-button
+                variant="critical"
+                :disabled="isSaving || !acl.can('store_credit.editor') || isLoading || balance <= 0"
                 @click="openDeductModal"
             >
-                <sw-icon name="regular-minus-circle" size="16px" />
-                {{ $tc('store-credits.customer.deductCredit') }}
-            </sw-button>
+                <mt-icon name="regular-minus-circle" :size="16" />
+                {{ $t('store-credits.customer.deductCredit') }}
+            </mt-button>
         </div>
         {% endblock %}
-    </sw-card>
+    </mt-card>
     {% endblock %}
 
     {% block sw_customer_detail_store_credits_add_modal %}
     <sw-modal
         v-if="showAddModal"
-        :title="$tc('store-credits.customer.addCredit')"
+        :title="$t('store-credits.customer.addCredit')"
         @modal-close="closeAddModal"
     >
         {% block sw_customer_detail_store_credits_add_modal_content %}
@@ -61,38 +61,38 @@
             columns="1fr"
             gap="0 30px"
         >
-            <sw-number-field
-                v-model:value="addAmount"
-                :label="$tc('store-credits.customer.amount')"
-                :placeholder="$tc('store-credits.customer.amountPlaceholder')"
+            <mt-number-field
+                v-model="addAmount"
+                :label="$t('store-credits.customer.amount')"
+                :placeholder="$t('store-credits.customer.amountPlaceholder')"
                 :min="0"
                 :step="0.01"
                 number-type="float"
             />
 
-            <sw-textarea-field
-                v-model:value="addReason"
-                :label="$tc('store-credits.customer.reason')"
-                :placeholder="$tc('store-credits.customer.reasonPlaceholder')"
+            <mt-textarea
+                v-model="addReason"
+                :label="$t('store-credits.customer.reason')"
+                :placeholder="$t('store-credits.customer.reasonPlaceholder')"
             />
         </sw-container>
         {% endblock %}
 
         {% block sw_customer_detail_store_credits_add_modal_footer %}
         <template #modal-footer>
-            <sw-button
+            <mt-button
                 @click="closeAddModal"
             >
-                {{ $tc('global.default.cancel') }}
-            </sw-button>
+                {{ $t('global.default.cancel') }}
+            </mt-button>
 
-            <sw-button
+            <mt-button
                 variant="primary"
-                :disabled="isLoading || !addAmount || addAmount <= 0"
+                :disabled="isSaving || !acl.can('store_credit.editor') || isLoading || !addAmount || addAmount <= 0"
                 @click="addCredit"
             >
-                {{ $tc('store-credits.customer.addCredit') }}
-            </sw-button>
+                {{ $t('store-credits.customer.addCredit') }}
+            </mt-button>
         </template>
         {% endblock %}
     </sw-modal>
@@ -101,7 +101,7 @@
     {% block sw_customer_detail_store_credits_deduct_modal %}
     <sw-modal
         v-if="showDeductModal"
-        :title="$tc('store-credits.customer.deductCredit')"
+        :title="$t('store-credits.customer.deductCredit')"
         @modal-close="closeDeductModal"
     >
         {% block sw_customer_detail_store_credits_deduct_modal_content %}
@@ -109,39 +109,39 @@
             columns="1fr"
             gap="0 30px"
         >
-            <sw-number-field
-                v-model:value="deductAmount"
-                :label="$tc('store-credits.customer.amount')"
-                :placeholder="$tc('store-credits.customer.amountPlaceholder')"
+            <mt-number-field
+                v-model="deductAmount"
+                :label="$t('store-credits.customer.amount')"
+                :placeholder="$t('store-credits.customer.amountPlaceholder')"
                 :min="0"
                 :max="balance"
                 :step="0.01"
                 number-type="float"
             />
 
-            <sw-textarea-field
-                v-model:value="deductReason"
-                :label="$tc('store-credits.customer.reason')"
-                :placeholder="$tc('store-credits.customer.reasonPlaceholder')"
+            <mt-textarea
+                v-model="deductReason"
+                :label="$t('store-credits.customer.reason')"
+                :placeholder="$t('store-credits.customer.reasonPlaceholder')"
             />
         </sw-container>
         {% endblock %}
 
         {% block sw_customer_detail_store_credits_deduct_modal_footer %}
         <template #modal-footer>
-            <sw-button
+            <mt-button
                 @click="closeDeductModal"
             >
-                {{ $tc('global.default.cancel') }}
-            </sw-button>
+                {{ $t('global.default.cancel') }}
+            </mt-button>
 
-            <sw-button
-                variant="danger"
-                :disabled="isLoading || !deductAmount || deductAmount <= 0 || deductAmount > balance"
+            <mt-button
+                variant="critical"
+                :disabled="isSaving || !acl.can('store_credit.editor') || isLoading || !deductAmount || deductAmount <= 0 || deductAmount > balance"
                 @click="deductCredit"
             >
-                {{ $tc('store-credits.customer.deductCredit') }}
-            </sw-button>
+                {{ $t('store-credits.customer.deductCredit') }}
+            </mt-button>
         </template>
         {% endblock %}
     </sw-modal>

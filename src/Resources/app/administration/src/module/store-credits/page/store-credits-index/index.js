@@ -8,7 +8,7 @@ const { Criteria } = Shopware.Data;
 Component.register('store-credits-index', {
     template,
 
-    inject: ['repositoryFactory', 'httpClient'],
+    inject: ['repositoryFactory', 'storeCreditApiService', 'acl'],
 
     mixins: [
         Mixin.getByName('notification'),
@@ -25,6 +25,7 @@ Component.register('store-credits-index', {
             storeCredits: [],
             customers: [],
             isLoading: false,
+            isSaving: false,
             amount: 0,
             reason: '',
             selectedCustomer: null,
@@ -34,8 +35,8 @@ Component.register('store-credits-index', {
             total: 0,
             term: '',
             columns: [
-                { property: 'customerFullName', label: 'Customer Full Name', allowResize: true, sortable: true },
-                { property: 'balance', label: 'Balance', allowResize: true },
+                { property: 'customerFullName', label: 'Customer Full Name', allowResize: true, sortable: false },
+                { property: 'balance', label: 'Balance', allowResize: true, sortable: false },
                 {
                     property: 'actions',
                     label: 'Balance Actions',
@@ -50,7 +51,7 @@ Component.register('store-credits-index', {
 
     created() {
         this.repository = this.repositoryFactory.create('solu1_store_credit');
-        
+
         // Initialize page and limit from URL query parameters
         if (this.$route.query.page) {
             this.page = parseInt(this.$route.query.page, 10) || 1;
@@ -78,7 +79,7 @@ Component.register('store-credits-index', {
                 this.fetchStoreCredits();
             }
         },
-        '$route.query.term'(newTerm, oldTerm) {
+        '$route.query.term'(newTerm) {
             const term = newTerm ? String(newTerm) : '';
             if (term === this.term) {
                 return;
@@ -112,14 +113,14 @@ Component.register('store-credits-index', {
                 );
             }
 
-            this.repository.search(criteria, Shopware.Context.api)
+            return this.repository.search(criteria, Shopware.Context.api)
                 .then((result) => {
                     this.storeCredits = result.map((credit) => {
                         const customer = credit.customer;
                         const firstName = customer?.firstName || '';
                         const lastName = customer?.lastName || '';
                         const customerFullName = (firstName + ' ' + lastName).trim() || 'N/A';
-                        
+
                         return {
                             id: credit.id,
                             customerFullName: customerFullName,
@@ -224,106 +225,39 @@ Component.register('store-credits-index', {
             this.selectedNewCustomer = null;
             this.newCustomerAmount = 0;
             this.addCustomerModalVisible = true;
-            this.fetchCustomers();
+
         },
 
         addBalance() {
-            const amount = parseFloat(this.amount);
-            if (isNaN(amount) || amount <= 0) {
-                return this.createNotificationError({ title: 'Error', message: 'Amount must be greater than zero.' });
-            }
-
-            fetch('/api/store-credit/add', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${Shopware.Context.api.authToken.access}`,
-                },
-                body: JSON.stringify({
-                    customerId: this.selectedCustomer.customerId,
-                    amount,
-                    reason: this.reason || 'Admin update',
-                }),
-            })
-                .then(async response => {
-                    const data = await response.json();
-                    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to add balance.');
-                    this.createNotificationSuccess({ title: 'Success', message: 'Balance added successfully!' });
-                    this.addBalanceModalVisible = false;
-                    this.fetchStoreCredits();
-                })
-                .catch(error => {
-                    console.error('Error adding balance:', error);
-                    this.createNotificationError({ title: 'Error', message: error.message });
-                });
+            return this.adjustBalance('add', this.selectedCustomer?.customerId, this.amount, this.reason, 'addBalanceModalVisible', this.selectedCustomer?.currencyId);
         },
 
         deductBalance() {
-            const amount = parseFloat(this.amount);
-            if (isNaN(amount) || amount <= 0) {
-                return this.createNotificationError({ title: 'Error', message: 'Amount must be greater than zero.' });
-            }
-
-            fetch('/api/store-credit/deduct', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${Shopware.Context.api.authToken.access}`,
-                },
-                body: JSON.stringify({
-                    customerId: this.selectedCustomer.customerId,
-                    amount,
-                    reason: this.reason || 'Admin update',
-                }),
-            })
-                .then(async response => {
-                    const data = await response.json();
-                    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to deduct balance.');
-                    this.createNotificationSuccess({ title: 'Success', message: 'Balance deducted successfully!' });
-                    this.deductBalanceModalVisible = false;
-                    this.fetchStoreCredits();
-                })
-                .catch(error => {
-                    console.error('Error deducting balance:', error);
-                    this.createNotificationError({ title: 'Error', message: error.message });
-                });
+            return this.adjustBalance('deduct', this.selectedCustomer?.customerId, this.amount, this.reason, 'deductBalanceModalVisible', this.selectedCustomer?.currencyId);
         },
 
         addCustomerCredit() {
-            const amount = parseFloat(this.newCustomerAmount);
-            if (!this.selectedNewCustomer) {
-                return this.createNotificationError({ title: 'Error', message: 'Please select a customer.' });
-            }
-            if (isNaN(amount) || amount <= 0) {
-                return this.createNotificationError({ title: 'Error', message: 'Amount must be greater than zero.' });
-            }
+            return this.adjustBalance('add', this.selectedNewCustomer, this.newCustomerAmount, 'Admin added store credit', 'addCustomerModalVisible');
+        },
 
-            fetch('/api/store-credit/add', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${Shopware.Context.api.authToken.access}`,
-                },
-                body: JSON.stringify({
-                    customerId: this.selectedNewCustomer,
-                    amount,
-                    reason: 'Admin added store credit',
-                }),
-            })
-                .then(async response => {
-                    const data = await response.json();
-                    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to add store credit.');
-                    this.createNotificationSuccess({ title: 'Success', message: 'Store credit added successfully!' });
-                    this.addCustomerModalVisible = false;
-                    this.fetchStoreCredits();
-                })
-                .catch(error => {
-                    console.error('Error adding store credit:', error);
-                    this.createNotificationError({ title: 'Error', message: error.message });
-                });
+        async adjustBalance(action, customerId, value, reason, modal, currencyId = null) {
+            if (this.isSaving || !this.acl.can('store_credit.editor')) return;
+            const amount = Number(value);
+            if (!customerId || !Number.isFinite(amount) || amount <= 0) {
+                this.createNotificationError({ message: 'Select a customer and enter a positive amount.' });
+                return;
+            }
+            this.isSaving = true;
+            try {
+                await this.storeCreditApiService.adjust(action, customerId, amount, reason || 'Admin update', currencyId);
+                this.createNotificationSuccess({ message: 'Store credit updated successfully.' });
+                this[modal] = false;
+                await this.fetchStoreCredits();
+            } catch (error) {
+                this.createNotificationError({ message: error.response?.data?.message || error.message || 'Could not update store credit.' });
+            } finally {
+                this.isSaving = false;
+            }
         },
 
         navigateToCustomerHistory(storeCreditId, customerName, balance, customerId) {
@@ -342,11 +276,13 @@ Component.register('store-credits-index', {
         },
 
         deleteStoreCredit() {
+            if (this.isSaving || !this.acl.can('store_credit.deleter')) return;
             if (!this.selectedStoreCredit || !this.selectedStoreCredit.id) {
                 return this.createNotificationError({ title: 'Error', message: 'Invalid store credit selection.' });
             }
 
-            this.repository.delete(this.selectedStoreCredit.id, Shopware.Context.api)
+            this.isSaving = true;
+            return this.repository.delete(this.selectedStoreCredit.id, Shopware.Context.api)
                 .then(() => {
                     this.createNotificationSuccess({ title: 'Success', message: 'Store credit deleted successfully!' });
                     this.confirmDeleteModalVisible = false;
@@ -356,7 +292,8 @@ Component.register('store-credits-index', {
                     console.error('Error deleting store credit:', error);
                     this.createNotificationError({ title: 'Error', message: 'Failed to delete store credit.' });
                     this.confirmDeleteModalVisible = false;
-                });
+                })
+                .finally(() => { this.isSaving = false; });
         },
     },
 });

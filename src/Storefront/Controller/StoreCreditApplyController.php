@@ -1,160 +1,52 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Solu1StoreCredit\Storefront\Controller;
 
+use Shopware\Core\Checkout\Cart\CartException;
 use Shopware\Core\Checkout\Cart\LineItem\LineItem;
 use Shopware\Core\Checkout\Cart\Price\Struct\AbsolutePriceDefinition;
 use Shopware\Core\Checkout\Cart\SalesChannel\CartService;
-use Shopware\Core\Framework\Context;
-use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
-use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
-use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
-use Shopware\Core\Framework\Log\Package;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
-use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Shopware\Storefront\Controller\StorefrontController;
 use Solu1StoreCredit\Constants\StoreCreditConstants;
+use Solu1StoreCredit\Core\Checkout\Cart\StoreCreditLineItem;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Package('checkout')]
 #[Route(defaults: ['_routeScope' => ['storefront']])]
 class StoreCreditApplyController extends StorefrontController
 {
-    private CartService $cartService;
-    private EntityRepository $storeCreditRepository;
-    private SystemConfigService $systemConfigurationService;
-    private string $storeCreditLineItemId = StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID;
-
-    public function __construct(
-        CartService $cartService,
-        EntityRepository $storeCreditRepository,
-        SystemConfigService $systemConfigurationService
-    ) {
-        $this->cartService = $cartService;
-        $this->storeCreditRepository = $storeCreditRepository;
-        $this->systemConfigurationService = $systemConfigurationService;
+    public function __construct(private readonly CartService $cartService)
+    {
     }
 
-    #[Route(path: '/store-credit-apply', name: 'frontend.store.credit.apply', defaults: ['_routeScope' => ['storefront']], methods: ['POST'])]
-    public function applyStoreCredit(Request $request, SalesChannelContext $context): Response
+    #[Route(path: '/store-credit-apply', name: 'frontend.store.credit.apply', defaults: ['_loginRequired' => true, '_loginRequiredAllowGuest' => true], methods: ['POST'])]
+    public function apply(Request $request, SalesChannelContext $context): Response
     {
-        $amount = (float)$request->get('amount');
-        $customer = $context->getCustomer();
-
-        if (!$customer || $amount <= 0) {
-            $this->addFlash('danger', 'Invalid amount or customer not logged in.');
-            return new RedirectResponse($this->generateUrl('frontend.checkout.confirm.page'));
+        if (!$context->getCustomer()) {
+            throw CartException::customerNotLoggedIn();
         }
-
-        if ($restrictedProducts = $this->hasRestrictedProductsInCart($context)) {
-            $productNames = array_map(
-                static fn ($product) => '<strong>' . htmlspecialchars($product['name'], ENT_QUOTES) . '</strong>',
-                $restrictedProducts
-            );
-            $this->addFlash(
-                'warning',
-                'Store credit cannot be applied due to restricted products in the cart: ' . implode(', ', $productNames)
-            );
-            return new RedirectResponse($this->generateUrl('frontend.checkout.confirm.page'));
+        $input = $request->request->all()['amount'] ?? null;
+        if (!is_scalar($input) || !is_numeric($input) || !is_finite((float) $input) || (float) $input < 0.01 || (float) $input > 99999999.99 || abs((float) $input - round((float) $input, 2)) > 0.0000001) {
+            $this->addFlash('danger', $this->trans('store-credit.invalidAmount'));
+            return $this->redirectToRoute('frontend.checkout.confirm.page');
         }
-
-        $creditBalance = $this->getCreditBalance($customer->getId(), $context->getContext());
-        $amountToApply = min($creditBalance, $amount);
-
         $cart = $this->cartService->getCart($context->getToken(), $context);
-        $storeCreditDiscount = $cart->getLineItems()->get($this->storeCreditLineItemId);
-        $totalAppliedCredit = 0;
-
-        if ($storeCreditDiscount && $storeCreditDiscount->getPrice()) {
-            $totalAppliedCredit = abs($storeCreditDiscount->getPrice()->getTotalPrice());
+        $amount = (float) $input;
+        foreach ($cart->getLineItems()->filter(StoreCreditLineItem::matches(...)) as $existing) {
+            $amount += abs($existing->getPrice()?->getTotalPrice() ?? 0.0);
+            $cart->getLineItems()->remove($existing->getId());
         }
+        $lineItem = new LineItem(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID, LineItem::CREDIT_LINE_ITEM_TYPE, StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID);
+        $lineItem->setLabel(StoreCreditConstants::STORE_CREDIT_DISCOUNT_LABEL);
+        $lineItem->setPriceDefinition(new AbsolutePriceDefinition(-$amount));
+        $lineItem->setPayloadValue('isStoreCredit', true);
+        $lineItem->setGood(false)->setRemovable(true);
+        $cart = $this->cartService->add($cart, $lineItem, $context);
+        $applied = abs($cart->getLineItems()->get($lineItem->getId())?->getPrice()?->getTotalPrice() ?? 0.0);
+        $this->addFlash($applied > 0 ? 'success' : 'warning', $this->trans($applied > 0 ? 'store-credit.applied' : 'store-credit.unavailable'));
 
-        $maxCreditPerOrder = $this->systemConfigurationService->get('StoreCredit.config.maxCreditPerOrder', $context->getSalesChannelId());
-        if ($maxCreditPerOrder > 0) {
-            $totalAfterApply = $totalAppliedCredit + $amountToApply;
-            if ($totalAfterApply > $maxCreditPerOrder) {
-                $this->addFlash('warning', "Maximum store credit per order is $" . number_format($maxCreditPerOrder, 2) . ". You can only apply $" . number_format($maxCreditPerOrder - $totalAppliedCredit, 2) . " more.");
-                return new RedirectResponse($this->generateUrl('frontend.checkout.confirm.page'));
-            }
-        }
-
-        if ($totalAppliedCredit + $amountToApply > $creditBalance) {
-            $this->addFlash('warning', 'Requested amount exceeds available store credit.');
-            return new RedirectResponse($this->generateUrl('frontend.checkout.confirm.page'));
-        }
-
-        if ($this->hasPremiumProtectionFee($context)) {
-            $this->addFlash('warning', 'Store credit cannot be applied when premium protection is active.');
-            return new RedirectResponse($this->generateUrl('frontend.checkout.confirm.page'));
-        }
-
-        if ($storeCreditDiscount) {
-            $currentPrice = $storeCreditDiscount->getPrice()->getTotalPrice();
-            $newPrice = max(-$creditBalance, $currentPrice - $amountToApply);
-            $storeCreditDiscount->setPriceDefinition(new AbsolutePriceDefinition($newPrice));
-        } else {
-            $discount = new LineItem($this->storeCreditLineItemId, LineItem::CREDIT_LINE_ITEM_TYPE, null, 1);
-            $discount->setLabel(StoreCreditConstants::STORE_CREDIT_DISCOUNT_LABEL);
-            $discount->setRemovable(true);
-            $discount->setStackable(true);
-            $discount->setPriceDefinition(new AbsolutePriceDefinition(-$amountToApply));
-            $discount->setGood(false);
-            $discount->setPayloadValue(StoreCreditConstants::PAYLOAD_KEY, true);
-            $this->cartService->add($cart, $discount, $context);
-        }
-
-        $this->cartService->recalculate($cart, $context);
-
-        $this->addFlash('success', 'Store credit applied successfully.');
-        return new RedirectResponse($this->generateUrl('frontend.checkout.confirm.page'));
-    }
-
-    private function getCreditBalance(?string $customerId, Context $context): float
-    {
-        if (!$customerId) {
-            return 0.0;
-        }
-
-        $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('customerId', $customerId));
-        $result = $this->storeCreditRepository->search($criteria, $context);
-        $storeCreditEntity = $result->first();
-
-        return $storeCreditEntity ? (float)$storeCreditEntity->get('balance') : 0.0;
-    }
-
-    private function hasPremiumProtectionFee(SalesChannelContext $context): bool
-    {
-        $cart = $this->cartService->getCart($context->getToken(), $context);
-        foreach ($cart->getLineItems() as $lineItem) {
-            if ($lineItem->getReferencedId() === 'premium-protection-fee') {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private function hasRestrictedProductsInCart(SalesChannelContext $context): array|bool
-    {
-        $restrictedProductIds = $this->systemConfigurationService->get('StoreCredit.config.restrictedProducts', $context->getSalesChannelId());
-        if (empty($restrictedProductIds)) {
-            return false;
-        }
-
-        $cart = $this->cartService->getCart($context->getToken(), $context);
-        $restrictedProducts = [];
-
-        foreach ($cart->getLineItems() as $lineItem) {
-            if (in_array($lineItem->getReferencedId(), $restrictedProductIds)) {
-                $restrictedProducts[] = [
-                    'id' => $lineItem->getReferencedId(),
-                    'name' => $lineItem->getLabel(),
-                ];
-            }
-        }
-        return !empty($restrictedProducts) ? $restrictedProducts : false;
+        return $this->redirectToRoute('frontend.checkout.confirm.page');
     }
 }

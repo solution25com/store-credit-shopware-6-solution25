@@ -14,7 +14,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class OrderStateInstallerCommand extends Command
 {
-    protected static string $defaultName = 'store-credit:install-order-state';
 
     public function __construct(
         private readonly OrderStateInstaller $orderStateInstaller

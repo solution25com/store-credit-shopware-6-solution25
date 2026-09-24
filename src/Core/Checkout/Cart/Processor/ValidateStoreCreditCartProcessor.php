@@ -1,116 +1,82 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Solu1StoreCredit\Core\Checkout\Cart\Processor;
 
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\CartBehavior;
+use Shopware\Core\Checkout\Cart\CartDataCollectorInterface;
 use Shopware\Core\Checkout\Cart\CartProcessorInterface;
 use Shopware\Core\Checkout\Cart\LineItem\CartDataCollection;
+use Shopware\Core\Checkout\Cart\LineItem\LineItem;
+use Shopware\Core\Checkout\Cart\Price\AbsolutePriceCalculator;
+use Shopware\Core\Checkout\Cart\Price\Struct\AbsolutePriceDefinition;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
-use Solu1StoreCredit\Constants\StoreCreditConstants;
+use Solu1StoreCredit\Core\Checkout\Cart\StoreCreditLineItem;
+use Solu1StoreCredit\Service\StoreCreditManager;
 
-class ValidateStoreCreditCartProcessor implements CartProcessorInterface
+class ValidateStoreCreditCartProcessor implements CartDataCollectorInterface, CartProcessorInterface
 {
-    private const FLAG = 'store-credit-validation.already-processed';
-    private SystemConfigService $systemConfigService;
+    private const DATA_KEY = 'solu1-store-credit';
 
-    public function __construct(SystemConfigService $systemConfigService)
-    {
-        $this->systemConfigService = $systemConfigService;
+    public function __construct(
+        private readonly SystemConfigService $config,
+        private readonly StoreCreditManager $manager,
+        private readonly AbsolutePriceCalculator $calculator,
+    ) {
     }
 
-    public function process(
-        CartDataCollection $data,
-        Cart $original,
-        Cart $toCalculate,
-        SalesChannelContext $context,
-        CartBehavior $behavior
-    ): void {
-        if ($data->has(self::FLAG)) {
+    public function collect(CartDataCollection $data, Cart $original, SalesChannelContext $context, CartBehavior $behavior): void
+    {
+        $customer = $context->getCustomer();
+        $balance = $customer ? $this->manager->getCreditBalance($customer->getId(), $context->getContext()) : null;
+        $data->set(self::DATA_KEY, [
+            'balance' => $balance && $balance['currencyId'] === $context->getCurrencyId() ? $balance['balanceAmount'] : 0.0,
+            'maximum' => (float) $this->config->get('StoreCredit.config.maxCreditPerOrder', $context->getSalesChannelId()),
+            'restricted' => (array) $this->config->get('StoreCredit.config.restrictedProducts', $context->getSalesChannelId()),
+        ]);
+    }
+
+    public function process(CartDataCollection $data, Cart $original, Cart $toCalculate, SalesChannelContext $context, CartBehavior $behavior): void
+    {
+        $settings = $data->get(self::DATA_KEY) ?? ['balance' => 0.0, 'maximum' => 0.0, 'restricted' => []];
+        $credits = $original->getLineItems()->filter(StoreCreditLineItem::matches(...));
+        foreach ($toCalculate->getLineItems()->filter(StoreCreditLineItem::matches(...)) as $credit) {
+            $toCalculate->getLineItems()->remove($credit->getId());
+        }
+        if ($settings['balance'] <= 0 || !$context->getCustomer()) {
             return;
         }
-
-        $storeCreditLineItem = $toCalculate->getLineItems()->get(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID);
-
-        if (!$storeCreditLineItem) {
-            $data->set(self::FLAG, true);
-            return;
-        }
-
-        if ($this->hasPremiumProtectionFee($toCalculate)) {
-            $toCalculate->getLineItems()->remove(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID);
-            $data->set(self::FLAG, true);
-            return;
-        }
-
-        if ($this->hasRestrictedProducts($toCalculate, $context)) {
-            $toCalculate->getLineItems()->remove(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID);
-            $data->set(self::FLAG, true);
-            return;
-        }
-
-        $storeCreditPrice = $storeCreditLineItem->getPrice();
-        if ($storeCreditPrice) {
-            $appliedCreditAmount = abs($storeCreditPrice->getTotalPrice());
-            $maxCreditPerOrder = $this->systemConfigService->get('StoreCredit.config.maxCreditPerOrder', $context->getSalesChannelId());
-            
-            if ($maxCreditPerOrder > 0 && $appliedCreditAmount > $maxCreditPerOrder) {
-                $toCalculate->getLineItems()->remove(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID);
-                $data->set(self::FLAG, true);
+        foreach ($toCalculate->getLineItems()->getFlat() as $item) {
+            if ($item->getReferencedId() === 'premium-protection-fee' || in_array($item->getReferencedId(), $settings['restricted'], true)
+                || in_array($item->getPayloadValue('parentId'), $settings['restricted'], true)) {
                 return;
             }
         }
-
-        $cartTotalWithoutCredit = $this->getCartTotalWithoutStoreCredit($toCalculate);
-
-        if ($cartTotalWithoutCredit <= 0) {
-            $toCalculate->getLineItems()->remove(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID);
+        $prices = $toCalculate->getLineItems()->getPrices()->merge($toCalculate->getDeliveries()->getShippingCosts());
+        $available = min($settings['balance'], max(0.0, $prices->getTotalPriceAmount()));
+        if ($settings['maximum'] > 0) {
+            $available = min($available, $settings['maximum']);
         }
-
-        $data->set(self::FLAG, true);
-    }
-
-    private function hasPremiumProtectionFee(Cart $cart): bool
-    {
-        foreach ($cart->getLineItems() as $lineItem) {
-            if ($lineItem->getReferencedId() === 'premium-protection-fee') {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private function hasRestrictedProducts(Cart $cart, SalesChannelContext $context): bool
-    {
-        $restrictedProductIds = $this->systemConfigService->get('StoreCredit.config.restrictedProducts', $context->getSalesChannelId());
-        if (empty($restrictedProductIds)) {
-            return false;
-        }
-
-        foreach ($cart->getLineItems() as $lineItem) {
-            if (in_array($lineItem->getReferencedId(), $restrictedProductIds)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function getCartTotalWithoutStoreCredit(Cart $cart): float
-    {
-        $total = 0.0;
-
-        foreach ($cart->getLineItems() as $lineItem) {
-            if ($lineItem->getId() === StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID) {
+        foreach ($credits as $credit) {
+            $definition = $credit->getPriceDefinition();
+            if (!$definition instanceof AbsolutePriceDefinition || !is_finite($definition->getPrice()) || $definition->getPrice() >= 0) {
                 continue;
             }
-            $price = $lineItem->getPrice();
-            if ($price) {
-                $total += $price->getTotalPrice();
+            $rounding = $context->getItemRounding();
+            $step = max(0.01, 10 ** -$rounding->getDecimals(), $rounding->getInterval());
+            $amount = round(floor(min(abs($definition->getPrice()), $available) / $step + 0.0000001) * $step, 2);
+            if ($amount < 0.01) {
+                continue;
             }
+            $credit->setType(LineItem::CREDIT_LINE_ITEM_TYPE);
+            $credit->setStackable(true)->setQuantity(1)->setStackable(false);
+            $credit->setGood(false)->setRemovable(true)->setShippingCostAware(false);
+            $credit->setPayloadValue('isStoreCredit', true);
+            $credit->setPriceDefinition(new AbsolutePriceDefinition(-$amount));
+            $credit->setPrice($this->calculator->calculate(-$amount, $prices, $context));
+            $toCalculate->add($credit);
+            $available -= abs($credit->getPrice()->getTotalPrice());
         }
-
-        return $total;
     }
 }

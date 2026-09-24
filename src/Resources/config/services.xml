@@ -23,7 +23,6 @@
             <argument type="service" id="state_machine.repository" />
             <argument type="service" id="state_machine_state.repository" />
             <argument type="service" id="state_machine_transition.repository" />
-            <argument type="service" id="state_machine_history.repository" />
         </service>
 
         <service id="Solu1StoreCredit\Controller\StoreCreditController">
@@ -35,33 +34,33 @@
         <service id="Solu1StoreCredit\Controller\StoreCreditPageController">
             <argument type="service" id="solu1_store_credit.repository"/>
             <argument type="service" id="solu1_store_credit_history.repository"/>
+            <argument type="service" id="Shopware\Storefront\Page\GenericPageLoader"/>
             <tag name="controller.service_arguments"/>
             <call method="setContainer">
                 <argument type="service" id="service_container"/>
             </call>
-            <call method="setTwig">
-                <argument type="service" id="twig"/>
-            </call>
         </service>
 
-        <service id="Solu1StoreCredit\Subscriber\CartSubscriber">
-                <argument type="service" id="Solu1StoreCredit\Service\StoreCreditManager"/>
-                <argument type="service" id="logger"/>
-                <tag name="kernel.event_subscriber"/>
+        <service id="Solu1StoreCredit\Core\Checkout\Cart\StoreCreditOrderPersister" decorates="Shopware\Core\Checkout\Cart\Order\OrderPersister">
+            <argument type="service" id="Solu1StoreCredit\Core\Checkout\Cart\StoreCreditOrderPersister.inner"/>
+            <argument type="service" id="Solu1StoreCredit\Service\StoreCreditManager"/>
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
         </service>
 
-        <service id="Solu1StoreCredit\Subscriber\OrderRefundSubscriber" public="true">
-            <argument type="service" id="order.repository" />
+        <service id="Solu1StoreCredit\Service\StoreCreditStateMachineRegistry" decorates="Shopware\Core\System\StateMachine\StateMachineRegistry">
+            <argument type="service" id="Solu1StoreCredit\Service\StoreCreditStateMachineRegistry.inner"/>
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+        </service>
+
+        <service id="Solu1StoreCredit\Subscriber\OrderRefundSubscriber">
             <argument type="service" id="order_return.repository" on-invalid="null"/>
-            <argument type="service" id="Solu1StoreCredit\Service\StoreCreditManager" />
-            <argument type="service" id="logger"/>
-            <tag name="kernel.event_subscriber" />
+            <argument type="service" id="Solu1StoreCredit\Service\StoreCreditManager"/>
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <tag name="kernel.event_subscriber"/>
         </service>
 
         <service id="Solu1StoreCredit\Storefront\Controller\StoreCreditApplyController">
             <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
-            <argument type="service" id="solu1_store_credit.repository"/>
-            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
             <call method="setContainer">
                 <argument type="service" id="service_container"/>
             </call>
@@ -70,7 +69,7 @@
 
         <service id="Solu1StoreCredit\EventSubscriber\StoreCreditCheckoutSubscriber">
             <argument type="service" id="Solu1StoreCredit\Service\StoreCreditManager"/>
-            <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 
@@ -80,16 +79,18 @@
         </service>
 
         <service id="Solu1StoreCredit\Subscriber\ConfigCommandSubscriber">
-            <argument type="service" id="console.command_loader"/>
-            <argument type="service" id="logger"/>
+            <argument type="service" id="Solu1StoreCredit\Service\OrderStateInstaller"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 
         <service id="Solu1StoreCredit\Core\Checkout\Cart\Processor\ValidateStoreCreditCartProcessor">
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
-            <tag name="shopware.cart.processor" priority="-20000"/>
+            <argument type="service" id="Solu1StoreCredit\Service\StoreCreditManager"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\Price\AbsolutePriceCalculator"/>
+            <tag name="shopware.cart.collector"/>
+            <tag name="shopware.cart.processor" priority="-6000"/>
         </service>
 
-        
+
     </services>
 </container>

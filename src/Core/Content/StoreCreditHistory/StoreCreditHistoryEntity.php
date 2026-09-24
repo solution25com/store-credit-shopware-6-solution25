@@ -10,10 +10,18 @@ class StoreCreditHistoryEntity extends Entity
 {
     use EntityIdTrait;
 
-    /**
-     * @var string
-     */
-    protected $id;
+    protected ?string $operationKey = null;
+
+    public function getOperationKey(): ?string
+    {
+        return $this->operationKey;
+    }
+
+    public function setOperationKey(?string $operationKey): void
+    {
+        $this->operationKey = $operationKey;
+    }
+
 
     /**
      * @var string
@@ -24,6 +32,10 @@ class StoreCreditHistoryEntity extends Entity
      * @var string
      */
     protected ?string $orderId = null;
+    protected ?string $orderVersionId = null;
+
+    public function getOrderVersionId(): ?string { return $this->orderVersionId; }
+    public function setOrderVersionId(?string $versionId): void { $this->orderVersionId = $versionId; }
 
     /**
      * @var float
@@ -50,26 +62,9 @@ class StoreCreditHistoryEntity extends Entity
      */
     protected $actionType;
 
-    /**
-     * @var \DateTimeInterface|null
-     */
-    protected $createdAt;
-
-    /**
-     * @var \DateTimeInterface|null
-     */
-    protected $updatedAt;
 
 
-    public function getId(): string
-    {
-        return $this->id;
-    }
 
-    public function setId(string $id): void
-    {
-        $this->id = $id;
-    }
 
     public function getStoreCreditId(): string
     {

@@ -15,8 +15,9 @@ Component.register('store-credits-history', {
         return {
             "history": [],
             "isLoading": false,
-            "customerName": this.$route.query.name || 'Unknown',
-            "customerBalance": parseFloat(this.$route.query.balance) || 0,
+            "customerName": '',
+            "customerBalance": 0,
+            "customerId": null,
             "currencyIsoCode": null,
             "page": 1,
             "limit": 10,
@@ -24,8 +25,8 @@ Component.register('store-credits-history', {
         };
     },
 
-    "created"() {
-        this.loadStoreCreditCurrency();
+    async created() {
+        await this.loadStoreCreditCurrency();
         this.fetchHistory();
     },
 
@@ -36,9 +37,13 @@ Component.register('store-credits-history', {
         async loadStoreCreditCurrency() {
             try {
                 const storeCreditRepository = this.repositoryFactory.create('solu1_store_credit');
-                const storeCredit = await storeCreditRepository.get(this.$route.params.id, Shopware.Context.api, {
-                    associations: ['currency'],
-                });
+                const criteria = new Criteria();
+                criteria.addAssociation('currency');
+                criteria.addAssociation('customer');
+                const storeCredit = await storeCreditRepository.get(this.$route.params.id, Shopware.Context.api, criteria);
+                this.customerId = storeCredit.customerId;
+                this.customerName = `${storeCredit.customer?.firstName || ''} ${storeCredit.customer?.lastName || ''}`.trim();
+                this.customerBalance = storeCredit.balance;
                 if (storeCredit?.currency?.isoCode) {
                     this.currencyIsoCode = storeCredit.currency.isoCode;
                 } else {

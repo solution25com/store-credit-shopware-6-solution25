@@ -1,0 +1,25 @@
+{
+  "base": "/bundles/storecredit/administration/",
+  "entryPoints": {
+    "store-credit": {
+      "css": [
+        "/bundles/storecredit/administration/assets/store-credit-BmliWCKX.css"
+      ],
+      "dynamic": [],
+      "js": [
+        "/bundles/storecredit/administration/assets/store-credit-B6sn8wrI.js"
+      ],
+      "legacy": false,
+      "preload": []
+    }
+  },
+  "legacy": false,
+  "metadatas": {},
+  "version": [
+    "7.1.0",
+    7,
+    1,
+    0
+  ],
+  "viteServer": null
+}

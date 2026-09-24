@@ -1,129 +1,46 @@
 {% sw_extends '@Storefront/storefront/page/account/_page.html.twig' %}
 
-{% block base_content %}
-    {% block page_account %}
-        <div class="account account-content row">
-            {% block page_account_sidebar %}
-                <div class="account-content-aside col-lg-3 col-xl-2 d-none d-lg-block">
-                    {% if context.customer and not context.customer.guest %}
-                        {% sw_include '@Storefront/storefront/page/account/sidebar.html.twig' %}
+{% block page_account_main_content %}
+    <div class="store-credit-page">
+        <h1>{{ 'store-credit.accountTitle'|trans }}</h1>
+        <p class="balance-display">{{ 'store-credit.description'|trans }}:
+            {{ (storeCredit.balance|default(0))|currency(storeCredit.currency.isoCode|default(context.currency.isoCode)) }}</p>
+        {% if storeCreditsHistory|length %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead><tr>
+                        <th scope="col">{{ 'store-credit.date'|trans }}</th>
+                        <th scope="col">{{ 'store-credit.amount'|trans }}</th>
+                        <th scope="col">{{ 'store-credit.reason'|trans }}</th>
+                    </tr></thead>
+                    <tbody>
+                        {% for credit in storeCreditsHistory %}
+                            <tr>
+                                <td>{{ credit.createdAt|format_datetime('medium', 'short') }}</td>
+                                <td class="{{ credit.actionType == 'add' ? 'amount-add' : 'amount-deduct' }}">
+                                    {{ credit.actionType == 'add' ? '+' : '−' }}{{ credit.amount|currency(credit.currency.isoCode|default(storeCredit.currency.isoCode|default(context.currency.isoCode))) }}
+                                </td>
+                                <td>{{ credit.reason|default('store-credit.noReason'|trans) }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p>{{ 'store-credit.noHistory'|trans }}</p>
+        {% endif %}
+        {% if storeCreditHistoryTotalPages > 1 or storeCreditHistoryPage > 1 %}
+            <nav aria-label="{{ 'store-credit.pagination'|trans }}">
+                <ul class="pagination">
+                    {% if storeCreditHistoryPage > 1 %}
+                        <li class="page-item"><a class="page-link" href="{{ path('frontend.account.store-credit.page', {page: storeCreditHistoryPage - 1}) }}">{{ 'store-credit.previous'|trans }}</a></li>
                     {% endif %}
-                </div>
-                <div class="d-lg-none user-dash-sidebar">
-                    <div class="accordion" id="accountSidebarAccordion">
-                        <div class="accordion-item" data-sidebar-tab-name-plugin>
-                            <h2 class="accordion-header" id="accountSidebarHeading">
-                                <button class="accordion-button collapsed text-white" type="button"
-                                        data-bs-toggle="collapse" data-bs-target="#accountSidebarCollapse"
-                                        aria-expanded="false" aria-controls="accountSidebarCollapse">
-                                    <span id="sidebar-tab-name"></span>
-                                </button>
-                            </h2>
-                            <div id="accountSidebarCollapse" class="accordion-collapse collapse"
-                                 aria-labelledby="accountSidebarHeading" data-bs-parent="#accountSidebarAccordion">
-                                <div class="accordion-body">
-                                    {% if context.customer and not context.customer.guest %}
-                                        {% sw_include '@Storefront/storefront/page/account/sidebar.html.twig' %}
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            {% endblock %}
-
-            {% block page_account_main %}
-                <div class="account-content-main col-lg-9 offset-xl-1 col-xl-9">
-
-                    {% block page_account_main_content %}
-                        <div class="store-credit-page">
-                            <div class="store-credit-header">
-                                <h2>
-                                    <i class="fas fa-wallet balance-icon"></i>
-                                    Store Credits
-                                </h2>
-                                {% if customer %}
-                                    <div class="customer-name-section">
-                                        <a href="{{ path('frontend.account.profile.page') }}" class="customer-name-link">
-                                            {{ customer.firstName }} {{ customer.lastName }}
-                                        </a>
-                                    </div>
-                                {% endif %}
-                                <div class="balance-display">
-                                    <i class="fas fa-dollar-sign"></i>
-                                    <span>{{ storeCredit.balance|currency }}</span>
-                                </div>
-                            </div>
-
-                            {% if storeCreditsHistory|length > 0 %}
-                                <div class="store-credit-history">
-                                    <table class="table">
-                                        <thead>
-                                        <tr>
-                                            <th>Date & Time</th>
-                                            <th>Amount</th>
-                                            <th>Reason</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        {% for credit in storeCreditsHistory %}
-                                            <tr>
-                                                <td class="date-cell">
-                                                    <i class="far fa-calendar-alt" style="margin-right: 6px;"></i>
-                                                    {{ credit.createdAt|date('Y-m-d H:i') }}
-                                                </td>
-                                                <td class="amount-cell {% if credit.actionType == 'add' %}amount-add{% elseif credit.actionType == 'deduct' %}amount-deduct{% endif %}">
-                                                    {{ credit.amount|currency }}
-                                                </td>
-                                                <td class="reason-cell">
-                                                    {{ credit.reason | default('Not specified') }}
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-                                        </tbody>
-                                    </table>
-
-                                    <nav aria-label="Store credit history pagination">
-                                        <ul class="pagination">
-                                            {% set currentPage = storeCreditHistoryPage %}
-                                            {% set pageSize = 10 %}
-
-                                            {# Previous page #}
-                                            <li class="page-item {{ currentPage <= 1 ? 'disabled' }}">
-                                                <a class="page-link"
-                                                   href="{{ path('frontend.account.store-credit.page', { page: currentPage - 1 }) }}"
-                                                   aria-label="Previous">
-                                                    <span aria-hidden="true">&laquo;</span>
-                                                </a>
-                                            </li>
-
-                                            <li class="page-item active">
-                                                <span class="page-link">{{ currentPage }}</span>
-                                            </li>
-
-                                            {# Next page: enabled only if we got a full page of results #}
-                                            <li class="page-item {{ storeCreditsHistory|length < pageSize ? 'disabled' }}">
-                                                <a class="page-link"
-                                                   href="{{ path('frontend.account.store-credit.page', { page: currentPage + 1 }) }}"
-                                                   aria-label="Next">
-                                                    <span aria-hidden="true">&raquo;</span>
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </nav>
-                                </div>
-                            {% else %}
-                                <div class="no-history">
-                                    <div class="no-history-icon">
-                                        <i class="far fa-wallet"></i>
-                                    </div>
-                                    <p>No store credits history found.</p>
-                                </div>
-                            {% endif %}
-                        </div>
-                    {% endblock %}
-                </div>
-            {% endblock %}
-        </div>
-    {% endblock %}
+                    <li class="page-item active"><span class="page-link" aria-current="page">{{ storeCreditHistoryPage }}</span></li>
+                    {% if storeCreditHistoryPage < storeCreditHistoryTotalPages %}
+                        <li class="page-item"><a class="page-link" href="{{ path('frontend.account.store-credit.page', {page: storeCreditHistoryPage + 1}) }}">{{ 'store-credit.next'|trans }}</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
 {% endblock %}

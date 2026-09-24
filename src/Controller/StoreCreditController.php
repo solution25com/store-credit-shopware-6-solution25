@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Solu1StoreCredit\Controller;
 
@@ -9,101 +9,64 @@ use Solu1StoreCredit\Exception\StoreCreditNotFoundException;
 use Solu1StoreCredit\Service\StoreCreditManager;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
-#[Route(defaults: ['_routeScope' => ['api'], "_loginRequired" => true])]
+#[Route(defaults: ['_routeScope' => ['api']])]
 class StoreCreditController
 {
-    private StoreCreditManager $storeCreditManager;
-    private LoggerInterface $logger;
-
-    public function __construct(
-        StoreCreditManager $storeCreditManager,
-        LoggerInterface $logger,
-    ) {
-        $this->storeCreditManager = $storeCreditManager;
-        $this->logger = $logger;
+    public function __construct(private readonly StoreCreditManager $manager, private readonly LoggerInterface $logger)
+    {
     }
 
-    #[Route(path: '/api/store-credit/add', name: 'api.store.credit.add', methods: ['POST'], defaults: ['_acl' => ['store_credit:create', 'store_credit:update']])]
-    public function addCredit(Request $request, Context $context): JsonResponse
+    #[Route(path: '/api/store-credit/add', name: 'api.store.credit.add', defaults: ['_acl' => ['solu1_store_credit:create', 'solu1_store_credit:update']], methods: ['POST'])]
+    public function add(Request $request, Context $context): JsonResponse
     {
-        $customerId = $request->get('customerId');
-        $amount     = (float)$request->get('amount');
-        $reason     = $request->get('reason');
-        $orderId    = $request->get('orderId');
-        $currencyId = $request->get('currencyId');
+        return $this->adjust($request, $context, true);
+    }
 
-        if ($amount <= 0) {
-            return new JsonResponse(['success' => false, 'message' => 'Amount must be greater than zero.'], 400);
-        }
+    #[Route(path: '/api/store-credit/deduct', name: 'api.store.credit.deduct', defaults: ['_acl' => ['solu1_store_credit:update']], methods: ['POST'])]
+    public function deduct(Request $request, Context $context): JsonResponse
+    {
+        return $this->adjust($request, $context, false);
+    }
 
+    #[Route(path: '/api/store-credit/balance', name: 'api.store.credit.balance', defaults: ['_acl' => ['solu1_store_credit:read']], methods: ['GET'])]
+    public function balance(Request $request, Context $context): JsonResponse
+    {
         try {
-            $historyId = $this->storeCreditManager->addCredit($customerId, $amount, $context, $orderId, $currencyId, $reason);
+            $id = $request->query->all()['customerId'] ?? null;
+            if (!is_string($id)) {
+                throw new \InvalidArgumentException('Customer ID is required.');
+            }
+            $balance = $this->manager->getCreditBalance($id, $context);
+            return new JsonResponse(['success' => true, 'balance' => $balance['balanceAmount'], 'currencyId' => $balance['currencyId']]);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse(['success' => false, 'message' => $e->getMessage()], 400);
+        }
+    }
 
+    private function adjust(Request $request, Context $context, bool $add): JsonResponse
+    {
+        try {
+            $data = $request->getPayload()->all();
+            $customerId = $data['customerId'] ?? null;
+            $amount = $data['amount'] ?? null;
+            if (!is_string($customerId) || !(is_int($amount) || is_float($amount) || (is_string($amount) && is_numeric($amount)))) {
+                throw new \InvalidArgumentException('Customer ID and a numeric amount are required.');
+            }
+            foreach (['reason', 'orderId', 'currencyId'] as $key) {
+                if (isset($data[$key]) && !is_string($data[$key])) {
+                    throw new \InvalidArgumentException($key . ' must be a string.');
+                }
+            }
+            $method = $add ? 'addCredit' : 'deductCredit';
+            $historyId = $this->manager->$method($customerId, (float) $amount, $context, $data['orderId'] ?? null, $data['currencyId'] ?? null, $data['reason'] ?? null);
             return new JsonResponse(['success' => true, 'historyId' => $historyId]);
-        } catch (\InvalidArgumentException | StoreCreditNotFoundException $e) {
+        } catch (\InvalidArgumentException|InsufficientCreditException|StoreCreditNotFoundException|\Symfony\Component\HttpFoundation\Exception\JsonException $e) {
             return new JsonResponse(['success' => false, 'message' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to add store credit', [
-                'customerId' => $customerId,
-                'amount' => $amount,
-                'error' => $e->getMessage(),
-            ]);
-
-            return new JsonResponse(['success' => false, 'message' => 'An unexpected error occurred while adding store credit.'], 500);
-        }
-    }
-
-    #[Route(path: '/api/store-credit/deduct', name: 'api.store.credit.deduct', methods: ['POST'], defaults: ['_acl' => ['store_credit:create', 'store_credit:update']])]
-    public function deductCredit(Request $request, Context $context): JsonResponse
-    {
-        $customerId = $request->get('customerId');
-        $amount     = (float)$request->get('amount');
-        $reason     = $request->get('reason');
-
-        if ($amount <= 0) {
-            return new JsonResponse(['success' => false, 'message' => 'Amount must be greater than zero.'], 400);
-        }
-
-        try {
-            $historyId = $this->storeCreditManager->deductCredit($customerId, $amount, $context, null, null, $reason);
-            return new JsonResponse(['success' => true, 'historyId' => $historyId]);
-        } catch (\InvalidArgumentException | StoreCreditNotFoundException | InsufficientCreditException $e) {
-            return new JsonResponse(['success' => false, 'message' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to deduct store credit', [
-                'customerId' => $customerId,
-                'amount' => $amount,
-                'error' => $e->getMessage(),
-            ]);
-
-            return new JsonResponse(['success' => false, 'message' => 'An unexpected error occurred while deducting store credit.'], 500);
-        }
-    }
-
-    #[Route(path: '/api/store-credit/balance', name: 'api.store-credit.balance', methods: ['GET'], defaults: ['_acl' => ['store_credit:read']])]
-    public function getCreditBalance(Request $request, Context $context): JsonResponse
-    {
-        $customerId = $request->get('customerId');
-
-        try {
-            $balance = $this->storeCreditManager->getCreditBalance($customerId, $context);
-
-            return new JsonResponse([
-                'success'    => true,
-                'balance'    => $balance['balanceAmount'],
-                'currencyId' => $balance['balanceCurrencyId'],
-            ]);
-        } catch (\InvalidArgumentException | StoreCreditNotFoundException $e) {
-            return new JsonResponse(['success' => false, 'message' => $e->getMessage()], 400);
-        } catch (\Exception $e) {
-            $this->logger->error('Failed to retrieve store credit balance', [
-                'customerId' => $customerId,
-                'error' => $e->getMessage(),
-            ]);
-
-            return new JsonResponse(['success' => false, 'message' => 'An unexpected error occurred while retrieving the credit balance.'], 500);
+        } catch (\Throwable $e) {
+            $this->logger->error('Store credit adjustment failed.', ['exception' => $e]);
+            return new JsonResponse(['success' => false, 'message' => 'Store credit could not be updated.'], 500);
         }
     }
 }

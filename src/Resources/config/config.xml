@@ -5,7 +5,7 @@
 
     <card>
         <title>Store Credit Limits</title>
-        
+
         <input-field type="float">
             <name>maxCreditPerOrder</name>
             <label lang="en-GB">Maximum credit per order</label>
@@ -26,11 +26,11 @@
     </card>
 
     <card>
-    <title>Store Credit Add State</title>
+    <title>Commercial return refunds</title>
     <input-field type="bool">
         <name>runInstallOrderStateCommand</name>
-        <label lang="en-GB">Run Order State Installer</label>
-        <helpText lang="en-GB">Toggle and save to execute the order state installation command.</helpText>
+        <label lang="en-GB">Enable store credit refunds</label>
+        <helpText lang="en-GB">Requires Commercial Return Management. Configure under All Sales Channels. Disabling removes the refund action and preserves previous refunds.</helpText>
     </input-field>
     </card>
 

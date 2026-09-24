@@ -1,95 +1,51 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 namespace Solu1StoreCredit\EventSubscriber;
 
-use Shopware\Core\Checkout\Cart\LineItem\LineItem;
-use Shopware\Core\Checkout\Cart\Price\Struct\AbsolutePriceDefinition;
-use Shopware\Core\Checkout\Cart\SalesChannel\CartService;
-use Shopware\Core\System\SalesChannel\SalesChannelContext;
+use Shopware\Core\Framework\Struct\ArrayStruct;
+use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Shopware\Storefront\Page\Checkout\Cart\CheckoutCartPageLoadedEvent;
 use Shopware\Storefront\Page\Checkout\Confirm\CheckoutConfirmPageLoadedEvent;
-use Solu1StoreCredit\Constants\StoreCreditConstants;
+use Solu1StoreCredit\Core\Checkout\Cart\StoreCreditLineItem;
 use Solu1StoreCredit\Service\StoreCreditManager;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class StoreCreditCheckoutSubscriber implements EventSubscriberInterface
 {
-    private StoreCreditManager $storeCreditManager;
-    private CartService $cartService;
-
-    public function __construct(
-        StoreCreditManager $storeCreditManager,
-        CartService $cartService
-    ) {
-        $this->storeCreditManager = $storeCreditManager;
-        $this->cartService = $cartService;
+    public function __construct(private readonly StoreCreditManager $manager, private readonly SystemConfigService $config)
+    {
     }
 
     public static function getSubscribedEvents(): array
     {
-        return [
-            CheckoutConfirmPageLoadedEvent::class => 'onCheckoutConfirmPageLoaded',
-            CheckoutCartPageLoadedEvent::class => 'onCheckoutCartPageLoaded',
-        ];
+        return [CheckoutCartPageLoadedEvent::class => 'onPageLoaded', CheckoutConfirmPageLoadedEvent::class => 'onPageLoaded'];
     }
 
-    public function onCheckoutConfirmPageLoaded(CheckoutConfirmPageLoadedEvent $event): void
+    public function onPageLoaded(CheckoutCartPageLoadedEvent|CheckoutConfirmPageLoadedEvent $event): void
     {
-        $this->assignStoreCreditData($event->getPage(), $event->getSalesChannelContext());
-    }
-
-    public function onCheckoutCartPageLoaded(CheckoutCartPageLoadedEvent $event): void
-    {
-        $this->assignStoreCreditData($event->getPage(), $event->getSalesChannelContext());
-    }
-
-    private function assignStoreCreditData($page, SalesChannelContext $context): void
-    {
+        $context = $event->getSalesChannelContext();
         $customer = $context->getCustomer();
-
         if (!$customer) {
             return;
         }
-
-        try {
-            $creditBalance = $this->storeCreditManager->getCreditBalance($customer->getId(), $context->getContext());
-            $cart = $this->cartService->getCart($context->getToken(), $context);
-            $this->validateStoreCredits($cart, $creditBalance['balanceAmount'], $context);
-
-            $page->assign([
-                'storeCreditBalance' => $creditBalance['balanceAmount'],
-                'storeCreditCurrencyId' => $creditBalance['balanceCurrencyId'],
-                'storeCreditId' => StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID,
-            ]);
-        } catch (\Exception $e) {
-            $page->assign([
-                'storeCreditBalance' => 0.0,
-                'storeCreditCurrencyId' => null,
-                'storeCreditId' => StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID,
-                'maxCreditPerOrder' => 0.0,
-            ]);
+        $balance = $this->manager->getCreditBalance($customer->getId(), $context->getContext());
+        $applied = 0.0;
+        foreach ($event->getPage()->getCart()->getLineItems()->filter(StoreCreditLineItem::matches(...)) as $item) {
+            $applied += abs($item->getPrice()?->getTotalPrice() ?? 0.0);
         }
-    }
-
-    private function validateStoreCredits($cart, float $creditBalance, SalesChannelContext $context): void
-    {
-        $storeCreditLineItem = $cart->getLineItems()->get(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID);
-
-        if (!$storeCreditLineItem) {
-            return;
+        $matchesCurrency = $balance['currencyId'] === $context->getCurrencyId();
+        $available = $matchesCurrency ? max(0.0, $balance['balanceAmount'] - $applied) : 0.0;
+        $maximum = $this->config->getFloat('StoreCredit.config.maxCreditPerOrder', $context->getSalesChannelId());
+        $available = min($available, max(0.0, $event->getPage()->getCart()->getPrice()->getTotalPrice()));
+        if ($maximum > 0) {
+            $available = min($available, max(0.0, $maximum - $applied));
         }
-
-        $totalAppliedCredit = abs($storeCreditLineItem->getPrice()->getTotalPrice());
-
-        if ($totalAppliedCredit > $creditBalance) {
-            if ($creditBalance > 0) {
-                $storeCreditLineItem->setPriceDefinition(new AbsolutePriceDefinition(-$creditBalance));
-                $this->cartService->recalculate($cart, $context);
-            } else {
-                $this->cartService->remove($cart, StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID, $context);
-            }
-        }
+        $expanded = $this->config->get('StoreCredit.config.expandStoreCreditByDefault', $context->getSalesChannelId());
+        $event->getPage()->addExtension('storeCredit', new ArrayStruct([
+            'balance' => $matchesCurrency ? $balance['balanceAmount'] : 0.0,
+            'remaining' => $matchesCurrency ? max(0.0, $balance['balanceAmount'] - $applied) : 0.0,
+            'maximum' => floor($available * 100 + 0.0000001) / 100,
+            'expanded' => $expanded === null || (bool) $expanded,
+        ]));
     }
 }

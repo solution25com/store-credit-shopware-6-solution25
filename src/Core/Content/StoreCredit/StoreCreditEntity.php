@@ -11,10 +11,6 @@ class StoreCreditEntity extends Entity
 {
     use EntityIdTrait;
 
-    /**
-     * @var string
-     */
-    protected $id;
 
     /**
      * @var string
@@ -38,25 +34,8 @@ class StoreCreditEntity extends Entity
      */
     protected float $balance;
 
-    /**
-     * @var \DateTimeInterface|null
-     */
-    protected $createdAt;
 
-    /**
-     * @var \DateTimeInterface|null
-     */
-    protected $updatedAt;
 
-    public function getId(): string
-    {
-        return $this->id;
-    }
-
-    public function setId(string $id): void
-    {
-        $this->id = $id;
-    }
 
     public function getCustomerId(): string
     {
