@@ -69,6 +69,110 @@ final class StoreCreditTest extends TestCase
         return self::getContainer()->get(CartCalculator::class)->calculate($cart, $context);
     }
 
+    private function withCurrency(SalesChannelContext $context, float $factor): SalesChannelContext
+    {
+        $currencyId = Uuid::randomHex();
+        self::getContainer()->get('currency.repository')->create([[
+            'id' => $currencyId, 'name' => 'Test dollar', 'shortName' => 'TST', 'isoCode' => 'TST', 'symbol' => '$', 'factor' => $factor,
+            'itemRounding' => ['decimals' => 2, 'interval' => 0.01, 'roundForNet' => true],
+            'totalRounding' => ['decimals' => 2, 'interval' => 0.01, 'roundForNet' => true],
+            'salesChannels' => [['id' => $context->getSalesChannelId()]],
+        ]], $context->getContext());
+
+        return self::getContainer()->get(SalesChannelContextFactory::class)->create($context->getToken(), $context->getSalesChannelId(), [
+            SalesChannelContextService::CUSTOMER_ID => $context->getCustomer()->getId(),
+            SalesChannelContextService::CURRENCY_ID => $currencyId,
+        ]);
+    }
+
+    public function testConvertedOrderDeductsWalletCurrencyAndRecordsTheLedger(): void
+    {
+        $context = $this->withCurrency($this->customerContext(), 1.25);
+        $customerId = $context->getCustomer()->getId();
+        $this->manager()->addCredit($customerId, 50.0, $context->getContext());
+        $cart = $this->cart($context, 100.0, 12.50);
+        self::assertSame(-12.5, $cart->getLineItems()->get(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID)->getPrice()->getTotalPrice());
+        $orderId = self::getContainer()->get(OrderPersister::class)->persist($cart, $context);
+        self::assertSame(['balanceAmount' => 40.0, 'currencyId' => Defaults::CURRENCY], $this->manager()->getCreditBalance($customerId, $context->getContext()));
+        $db = self::getContainer()->get(Connection::class);
+        $entry = $db->fetchAssociative('SELECT amount, LOWER(HEX(currency_id)) AS currency FROM solu1_store_credit_history WHERE operation_key = :key', ['key' => 'order:' . $orderId]);
+        self::assertSame(10.0, (float) $entry['amount']);
+        self::assertSame(Defaults::CURRENCY, $entry['currency']);
+        self::assertSame($context->getCurrencyId(), $db->fetchOne('SELECT LOWER(HEX(currency_id)) FROM `order` WHERE id = UNHEX(:id)', ['id' => $orderId]));
+    }
+
+    public function testConvertedFullBalanceCannotOverdrawThroughRounding(): void
+    {
+        $context = $this->withCurrency($this->customerContext(), 1.17085);
+        $customerId = $context->getCustomer()->getId();
+        $this->manager()->addCredit($customerId, 10.0, $context->getContext());
+        $cart = $this->cart($context, 100.0, 99.0);
+        self::assertSame(-11.7, $cart->getLineItems()->get(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID)->getPrice()->getTotalPrice());
+        self::getContainer()->get(OrderPersister::class)->persist($cart, $context);
+        self::assertSame(0.0, $this->manager()->getCreditBalance($customerId, $context->getContext())['balanceAmount']);
+    }
+
+    public function testAppliedCreditConvertsOnCurrencyChangesWithoutRoundTripDrift(): void
+    {
+        $eur = $this->customerContext();
+        $usd = $this->withCurrency($eur, 1.17085);
+        $this->manager()->addCredit($eur->getCustomer()->getId(), 50.0, $eur->getContext());
+        $cart = $this->cart($eur, 100.0, 10.0);
+        $calculator = self::getContainer()->get(CartCalculator::class);
+        for ($i = 0; $i < 3; ++$i) {
+            $cart = $calculator->calculate($cart, $usd);
+            self::assertSame(-11.7, $cart->getLineItems()->get(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID)->getPrice()->getTotalPrice());
+            $cart = $calculator->calculate($cart, $eur);
+            self::assertSame(-10.0, $cart->getLineItems()->get(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID)->getPrice()->getTotalPrice());
+        }
+        // Explicit Administration edits replace the previous requested amount.
+        $cart->getLineItems()->get(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID)->setPriceDefinition(new AbsolutePriceDefinition(-5.0));
+        $cart = $calculator->calculate($cart, $eur);
+        $cart = $calculator->calculate($cart, $usd);
+        self::assertSame(-5.85, $cart->getLineItems()->get(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID)->getPrice()->getTotalPrice());
+        self::assertSame(50.0, $this->manager()->getCreditBalance($eur->getCustomer()->getId(), $eur->getContext())['balanceAmount']);
+    }
+
+    public function testNonSystemWalletConvertsIntoSystemCheckout(): void
+    {
+        $context = $this->customerContext();
+        $other = $this->withCurrency($context, 1.25);
+        $customerId = $context->getCustomer()->getId();
+        $this->manager()->addCredit($customerId, 50.0, $context->getContext(), currencyId: $other->getCurrencyId());
+        $cart = $this->cart($context, 100.0, 10.0);
+        self::getContainer()->get(OrderPersister::class)->persist($cart, $context);
+        self::assertSame(['balanceAmount' => 37.5, 'currencyId' => $other->getCurrencyId()], $this->manager()->getCreditBalance($customerId, $context->getContext()));
+    }
+
+    public function testConvertedOrderRechecksBalanceBeforePersisting(): void
+    {
+        $context = $this->withCurrency($this->customerContext(), 1.25);
+        $customerId = $context->getCustomer()->getId();
+        $this->manager()->addCredit($customerId, 50.0, $context->getContext());
+        $cart = $this->cart($context, 100.0, 50.0);
+        $this->manager()->deductCredit($customerId, 20.0, $context->getContext());
+        $inner = $this->createMock(OrderPersisterInterface::class);
+        $inner->expects(self::never())->method('persist');
+        $persister = new StoreCreditOrderPersister($inner, $this->manager(), self::getContainer()->get(Connection::class), self::getContainer()->get(\Solu1StoreCredit\Service\StoreCreditCurrencyConverter::class));
+        $this->expectException(\Symfony\Component\HttpKernel\Exception\BadRequestHttpException::class);
+        $persister->persist($cart, $context);
+    }
+
+    public function testMultipleConvertedLinesUseOneRoundedWalletDebit(): void
+    {
+        $context = $this->withCurrency($this->customerContext(), 1.25);
+        $customerId = $context->getCustomer()->getId();
+        $this->manager()->addCredit($customerId, 10.0, $context->getContext());
+        $cart = $this->cart($context, 100.0, 1.01);
+        $other = new LineItem(Uuid::randomHex(), LineItem::CREDIT_LINE_ITEM_TYPE);
+        $other->setLabel(StoreCreditConstants::STORE_CREDIT_DISCOUNT_LABEL)->setPriceDefinition(new AbsolutePriceDefinition(-1.01));
+        $other->setPayloadValue('storeCreditExchangeRate', 1000000.0);
+        $cart->add($other);
+        $cart = self::getContainer()->get(CartCalculator::class)->calculate($cart, $context);
+        self::getContainer()->get(OrderPersister::class)->persist($cart, $context);
+        self::assertSame(8.38, $this->manager()->getCreditBalance($customerId, $context->getContext())['balanceAmount']);
+    }
+
     public function testCreditAndHistoryPersistWithTimestampsAndCurrency(): void
     {
         $context = $this->customerContext();
@@ -187,7 +291,7 @@ final class StoreCreditTest extends TestCase
 
     public function testOrderIsRolledBackWhenDeductionFails(): void
     {
-        $context = $this->customerContext();
+        $context = $this->withCurrency($this->customerContext(), 1.25);
         $this->manager()->addCredit($context->getCustomer()->getId(), 50.0, $context->getContext());
         $cart = $this->cart($context);
         $db = self::getContainer()->get(Connection::class);
@@ -198,7 +302,7 @@ final class StoreCreditTest extends TestCase
         $manager->method('deductCredit')->willThrowException(new \RuntimeException('Injected ledger failure'));
         $inner = self::getContainer()->get(StoreCreditOrderPersister::class . '.inner');
         try {
-            (new StoreCreditOrderPersister($inner, $manager, $db))->persist($cart, $context);
+            (new StoreCreditOrderPersister($inner, $manager, $db, self::getContainer()->get(\Solu1StoreCredit\Service\StoreCreditCurrencyConverter::class)))->persist($cart, $context);
             self::fail('The ledger failure must propagate.');
         } catch (\RuntimeException $e) {
             self::assertSame('Injected ledger failure', $e->getMessage());
@@ -277,7 +381,7 @@ final class StoreCreditTest extends TestCase
         $this->manager()->deductCredit($id, 30.0, $context->getContext());
         $inner = $this->createMock(OrderPersisterInterface::class);
         $inner->expects(self::never())->method('persist');
-        $persister = new StoreCreditOrderPersister($inner, $this->manager(), self::getContainer()->get(Connection::class));
+        $persister = new StoreCreditOrderPersister($inner, $this->manager(), self::getContainer()->get(Connection::class), self::getContainer()->get(\Solu1StoreCredit\Service\StoreCreditCurrencyConverter::class));
         $this->expectException(\Symfony\Component\HttpKernel\Exception\BadRequestHttpException::class);
         $persister->persist($cart, $context);
     }
@@ -345,9 +449,19 @@ final class StoreCreditTest extends TestCase
         }
     }
 
-    public function testStorefrontAccountRendersAndCreditApplicationUsesTheLoggedInCustomer(): void
+    public static function checkoutCurrencies(): iterable
+    {
+        yield 'wallet currency' => [false];
+        yield 'converted currency' => [true];
+    }
+
+    #[DataProvider('checkoutCurrencies')]
+    public function testStorefrontAccountRendersAndCreditApplicationUsesTheLoggedInCustomer(bool $convert): void
     {
         $context = $this->customerContext();
+        if ($convert) {
+            $context = $this->withCurrency($context, 1.25);
+        }
         $customer = $context->getCustomer();
         self::getContainer()->get('customer.repository')->update([['id' => $customer->getId(), 'password' => 'store-credit-test-password']], $context->getContext());
         $this->manager()->addCredit($customer->getId(), 50.0, $context->getContext(), reason: '<script>unsafe</script>');
@@ -366,7 +480,11 @@ final class StoreCreditTest extends TestCase
         self::assertStringNotContainsString('<script>unsafe</script>', $html);
         $token = self::getContainer()->get(Connection::class)->fetchOne('SELECT token FROM sales_channel_api_context WHERE customer_id = UNHEX(:id) AND sales_channel_id = UNHEX(:channel) ORDER BY updated_at DESC LIMIT 1', ['id' => $customer->getId(), 'channel' => $context->getSalesChannelId()]);
         self::assertNotEmpty($token);
-        $loggedContext = self::getContainer()->get(SalesChannelContextFactory::class)->create($token, $context->getSalesChannelId(), [SalesChannelContextService::CUSTOMER_ID => $customer->getId()]);
+        if ($convert) {
+            $browser->request('POST', $domain . '/checkout/configure', ['currencyId' => $context->getCurrencyId(), 'redirectTo' => 'frontend.checkout.confirm.page']);
+            self::assertSame(302, $browser->getResponse()->getStatusCode(), $browser->getResponse()->getContent());
+        }
+        $loggedContext = self::getContainer()->get(SalesChannelContextFactory::class)->create($token, $context->getSalesChannelId(), [SalesChannelContextService::CUSTOMER_ID => $customer->getId(), SalesChannelContextService::CURRENCY_ID => $context->getCurrencyId()]);
         $cart = new Cart($token);
         $product = new LineItem(Uuid::randomHex(), LineItem::CUSTOM_LINE_ITEM_TYPE);
         $product->setLabel('HTTP credit test')->setGood(false)->setPriceDefinition(new QuantityPriceDefinition(100.0, new TaxRuleCollection([new TaxRule(19)])));
@@ -381,7 +499,10 @@ final class StoreCreditTest extends TestCase
         $browser->request('GET', $domain . '/checkout/confirm');
         self::assertSame(200, $browser->getResponse()->getStatusCode(), substr($browser->getResponse()->getContent(), 0, 2000));
         self::assertTrue(str_contains($browser->getResponse()->getContent(), 'data-storecredit-plugin'), 'The checkout must include the store credit form.');
-        self::assertTrue(str_contains($browser->getResponse()->getContent(), 'max="37.5"'), 'Only the remaining credit may be applied.');
+        $expectedMaximum = $convert ? '50' : '37.5';
+        self::assertTrue(str_contains($browser->getResponse()->getContent(), 'max="' . $expectedMaximum . '"'), 'Only the remaining converted credit may be applied.');
+        self::assertStringNotContainsString('Switch checkout', $browser->getResponse()->getContent());
+        self::assertSame($context->getCurrencyId(), $persisted->getLineItems()->get(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID)->getPayloadValue('storeCreditCurrencyId'));
     }
 
     public function testCashRoundingCannotIncreaseTheDiscountPastTheWallet(): void

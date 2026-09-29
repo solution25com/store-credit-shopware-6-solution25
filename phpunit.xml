@@ -8,5 +8,8 @@
         <env name="APP_ENV" value="test"/>
         <env name="APP_DEBUG" value="1"/>
     </php>
-    <testsuites><testsuite name="Store Credit Integration"><directory>tests/Integration</directory></testsuite></testsuites>
+    <testsuites>
+        <testsuite name="Store Credit Unit"><directory>tests/Unit</directory></testsuite>
+        <testsuite name="Store Credit Integration"><directory>tests/Integration</directory></testsuite>
+    </testsuites>
 </phpunit>

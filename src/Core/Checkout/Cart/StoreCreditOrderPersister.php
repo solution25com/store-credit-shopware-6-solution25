@@ -10,6 +10,7 @@ use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Uuid\Uuid;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Solu1StoreCredit\Service\StoreCreditManager;
+use Solu1StoreCredit\Service\StoreCreditCurrencyConverter;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class StoreCreditOrderPersister implements OrderPersisterInterface
@@ -18,6 +19,7 @@ class StoreCreditOrderPersister implements OrderPersisterInterface
         private readonly OrderPersisterInterface $inner,
         private readonly StoreCreditManager $manager,
         private readonly Connection $connection,
+        private readonly StoreCreditCurrencyConverter $converter,
     ) {
     }
 
@@ -41,11 +43,14 @@ class StoreCreditOrderPersister implements OrderPersisterInterface
 
         return $this->manager->withCustomerLock($customer->getId(), function () use ($cart, $context, $customer, $amount): string {
             $wallet = $this->connection->fetchAssociative('SELECT balance, LOWER(HEX(currency_id)) AS currency_id FROM solu1_store_credit WHERE customer_id = :id FOR UPDATE', ['id' => Uuid::fromHexToBytes($customer->getId())]);
-            if (!$wallet || ($wallet['currency_id'] ?: Defaults::CURRENCY) !== $context->getCurrencyId() || (float) $wallet['balance'] < round($amount, 2)) {
+            $walletCurrencyId = $wallet['currency_id'] ?? Defaults::CURRENCY;
+            $rate = $this->converter->getRates([$walletCurrencyId], $context)[$walletCurrencyId] ?? 0.0;
+            $debit = $rate > 0 ? $this->converter->walletDebit($amount, $rate) : INF;
+            if (!$wallet || !is_finite($debit) || $debit <= 0 || (float) $wallet['balance'] < $debit) {
                 throw new BadRequestHttpException('Store credit balance has changed. Please recalculate your cart.');
             }
             $orderId = $this->inner->persist($cart, $context);
-            $this->manager->deductCredit($customer->getId(), round($amount, 2), $context->getContext(), $orderId, $context->getCurrencyId(), 'Store credit used for order payment', 'order:' . $orderId);
+            $this->manager->deductCredit($customer->getId(), $debit, $context->getContext(), $orderId, $walletCurrencyId, 'Store credit used for order payment', 'order:' . $orderId);
 
             return $orderId;
         });

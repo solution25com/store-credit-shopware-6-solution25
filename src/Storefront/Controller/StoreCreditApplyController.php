@@ -42,6 +42,9 @@ class StoreCreditApplyController extends StorefrontController
         $lineItem->setLabel(StoreCreditConstants::STORE_CREDIT_DISCOUNT_LABEL);
         $lineItem->setPriceDefinition(new AbsolutePriceDefinition(-$amount));
         $lineItem->setPayloadValue('isStoreCredit', true);
+        $lineItem->setPayloadValue('storeCreditAmount', $amount);
+        $lineItem->setPayloadValue('storeCreditCurrencyId', $context->getCurrencyId());
+        $lineItem->setPayloadValue('storeCreditCalculatedAmount', $amount);
         $lineItem->setGood(false)->setRemovable(true);
         $cart = $this->cartService->add($cart, $lineItem, $context);
         $applied = abs($cart->getLineItems()->get($lineItem->getId())?->getPrice()?->getTotalPrice() ?? 0.0);

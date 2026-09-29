@@ -19,6 +19,10 @@
             <argument type="service" id="Doctrine\DBAL\Connection"/>
         </service>
 
+        <service id="Solu1StoreCredit\Service\StoreCreditCurrencyConverter">
+            <argument type="service" id="currency.repository"/>
+        </service>
+
         <service id="Solu1StoreCredit\Service\OrderStateInstaller">
             <argument type="service" id="state_machine.repository" />
             <argument type="service" id="state_machine_state.repository" />
@@ -45,6 +49,7 @@
             <argument type="service" id="Solu1StoreCredit\Core\Checkout\Cart\StoreCreditOrderPersister.inner"/>
             <argument type="service" id="Solu1StoreCredit\Service\StoreCreditManager"/>
             <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <argument type="service" id="Solu1StoreCredit\Service\StoreCreditCurrencyConverter"/>
         </service>
 
         <service id="Solu1StoreCredit\Service\StoreCreditStateMachineRegistry" decorates="Shopware\Core\System\StateMachine\StateMachineRegistry">
@@ -70,6 +75,7 @@
         <service id="Solu1StoreCredit\EventSubscriber\StoreCreditCheckoutSubscriber">
             <argument type="service" id="Solu1StoreCredit\Service\StoreCreditManager"/>
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <argument type="service" id="Solu1StoreCredit\Service\StoreCreditCurrencyConverter"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 
@@ -87,6 +93,7 @@
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
             <argument type="service" id="Solu1StoreCredit\Service\StoreCreditManager"/>
             <argument type="service" id="Shopware\Core\Checkout\Cart\Price\AbsolutePriceCalculator"/>
+            <argument type="service" id="Solu1StoreCredit\Service\StoreCreditCurrencyConverter"/>
             <tag name="shopware.cart.collector"/>
             <tag name="shopware.cart.processor" priority="-6000"/>
         </service>

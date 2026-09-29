@@ -14,6 +14,7 @@ use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
 use Solu1StoreCredit\Core\Checkout\Cart\StoreCreditLineItem;
 use Solu1StoreCredit\Service\StoreCreditManager;
+use Solu1StoreCredit\Service\StoreCreditCurrencyConverter;
 
 class ValidateStoreCreditCartProcessor implements CartDataCollectorInterface, CartProcessorInterface
 {
@@ -23,6 +24,7 @@ class ValidateStoreCreditCartProcessor implements CartDataCollectorInterface, Ca
         private readonly SystemConfigService $config,
         private readonly StoreCreditManager $manager,
         private readonly AbsolutePriceCalculator $calculator,
+        private readonly StoreCreditCurrencyConverter $converter,
     ) {
     }
 
@@ -30,8 +32,14 @@ class ValidateStoreCreditCartProcessor implements CartDataCollectorInterface, Ca
     {
         $customer = $context->getCustomer();
         $balance = $customer ? $this->manager->getCreditBalance($customer->getId(), $context->getContext()) : null;
+        $currencyIds = $balance ? [$balance['currencyId']] : [];
+        foreach ($original->getLineItems()->filter(StoreCreditLineItem::matches(...)) as $credit) {
+            $currencyIds[] = StoreCreditLineItem::getRequest($credit, $context->getCurrencyId())['currencyId'];
+        }
+        $rates = $this->converter->getRates($currencyIds, $context);
         $data->set(self::DATA_KEY, [
-            'balance' => $balance && $balance['currencyId'] === $context->getCurrencyId() ? $balance['balanceAmount'] : 0.0,
+            'balance' => $balance ? $this->converter->roundCheckoutAmount($balance['balanceAmount'] * ($rates[$balance['currencyId']] ?? 0.0), $context) : 0.0,
+            'rates' => $rates,
             'maximum' => (float) $this->config->get('StoreCredit.config.maxCreditPerOrder', $context->getSalesChannelId()),
             'restricted' => (array) $this->config->get('StoreCredit.config.restrictedProducts', $context->getSalesChannelId()),
         ]);
@@ -63,9 +71,9 @@ class ValidateStoreCreditCartProcessor implements CartDataCollectorInterface, Ca
             if (!$definition instanceof AbsolutePriceDefinition || !is_finite($definition->getPrice()) || $definition->getPrice() >= 0) {
                 continue;
             }
-            $rounding = $context->getItemRounding();
-            $step = max(0.01, 10 ** -$rounding->getDecimals(), $rounding->getInterval());
-            $amount = round(floor(min(abs($definition->getPrice()), $available) / $step + 0.0000001) * $step, 2);
+            $request = StoreCreditLineItem::getRequest($credit, $context->getCurrencyId());
+            $requested = $request['amount'] * ($settings['rates'][$request['currencyId']] ?? 0.0);
+            $amount = $this->converter->roundCheckoutAmount(min($requested, $available), $context);
             if ($amount < 0.01) {
                 continue;
             }
@@ -73,6 +81,9 @@ class ValidateStoreCreditCartProcessor implements CartDataCollectorInterface, Ca
             $credit->setStackable(true)->setQuantity(1)->setStackable(false);
             $credit->setGood(false)->setRemovable(true)->setShippingCostAware(false);
             $credit->setPayloadValue('isStoreCredit', true);
+            $credit->setPayloadValue('storeCreditAmount', $request['amount']);
+            $credit->setPayloadValue('storeCreditCurrencyId', $request['currencyId']);
+            $credit->setPayloadValue('storeCreditCalculatedAmount', $amount);
             $credit->setPriceDefinition(new AbsolutePriceDefinition(-$amount));
             $credit->setPrice($this->calculator->calculate(-$amount, $prices, $context));
             $toCalculate->add($credit);
