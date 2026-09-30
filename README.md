@@ -12,8 +12,13 @@ The Store Credit Plugin allows administrators to manage store credits for custom
 - **Smooth Checkout Integration** Customers can apply store credit at checkout alongside other payment methods.
 - **Transaction History**: Customers and admins can view a history of store credit transactions.
 
-## Compatibility
-- ✅ Shopware 6.6.x 
+ ## Compatibility
+  - ✅ Shopware 6.6.x
+
+  | Shopware | Branch | Plugin version |
+  |---|---|---|
+  | 6.6.x | `main` | 1.x |
+  | 6.7.x | `main-6.7` | 2.x |
 
 ## Get Started
 
