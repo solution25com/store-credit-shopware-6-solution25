@@ -11,7 +11,13 @@
             "amount": "Amount",
             "amountPlaceholder": "Enter amount",
             "reason": "Reason",
-            "reasonPlaceholder": "Enter reason (optional)"
+            "reasonPlaceholder": "Enter reason (optional)",
+            "reserved": "Reserved for pending orders",
+            "available": "Available",
+            "reservedOn": "Held for order(s): {orders}",
+            "expiredOn": "No longer held (older than the reservation limit): {orders}",
+            "reservedConfirmMessage": "Only {available} is available. {reserved} is reserved for pending orders. Confirm to deduct reserved credit.",
+            "reservedConfirmCheckbox": "Deduct reserved credit anyway"
         }
     },
     "sw-privileges": {

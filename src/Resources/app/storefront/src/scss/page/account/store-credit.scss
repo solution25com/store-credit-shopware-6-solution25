@@ -3,3 +3,18 @@
     .amount-add { color: #146c43; }
     .amount-deduct { color: #b02a37; }
 }
+
+.store-credit-balance-summary {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 4px 16px;
+    margin: 0 0 24px;
+
+    dt { font-weight: 600; }
+    dd { margin: 0; }
+
+    &__orders {
+        display: block;
+        color: $gray-600;
+    }
+}

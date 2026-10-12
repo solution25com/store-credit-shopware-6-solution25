@@ -162,11 +162,22 @@
                         label="Reason"
                         placeholder="Enter reason for deducting balance"
                 />
+                <mt-banner
+                        v-if="reservedConfirmRequired"
+                        variant="attention"
+                >
+                    {{ reservedNotice }}
+                </mt-banner>
+                <mt-checkbox
+                        v-if="reservedConfirmRequired"
+                        v-model="allowReserved"
+                        :label="$t('store-credits.customer.reservedConfirmCheckbox')"
+                />
                 <template #modal-footer>
                     <mt-button @click="deductBalanceModalVisible = false" size="small">
                         Cancel
                     </mt-button>
-                    <mt-button :disabled="isSaving || !acl.can('store_credit.editor')" @click="deductBalance" size="small" variant="critical">
+                    <mt-button :disabled="isSaving || !acl.can('store_credit.editor') || (reservedConfirmRequired && !allowReserved)" @click="deductBalance" size="small" variant="critical">
                         <mt-icon name="regular-check" :size="16"></mt-icon>
                         Deduct Balance
                     </mt-button>

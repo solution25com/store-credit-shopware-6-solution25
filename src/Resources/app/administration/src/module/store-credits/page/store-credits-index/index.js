@@ -20,6 +20,9 @@ Component.register('store-credits-index', {
             confirmDeleteModalVisible: false,
             addBalanceModalVisible: false,
             deductBalanceModalVisible: false,
+            reservedConfirmRequired: false,
+            allowReserved: false,
+            reservedNotice: '',
             addCustomerModalVisible: false,
             repository: null,
             storeCredits: [],
@@ -67,6 +70,9 @@ Component.register('store-credits-index', {
     },
 
     watch: {
+        amount() {
+            this.resetReservedConfirmation();
+        },
         '$route.query.page'() {
             if (this.$route.query.page) {
                 this.page = parseInt(this.$route.query.page, 10);
@@ -218,7 +224,14 @@ Component.register('store-credits-index', {
             this.selectedCustomer = customer;
             this.amount = 0;
             this.reason = '';
+            this.resetReservedConfirmation();
             this.deductBalanceModalVisible = true;
+        },
+
+        resetReservedConfirmation() {
+            this.reservedConfirmRequired = false;
+            this.allowReserved = false;
+            this.reservedNotice = '';
         },
 
         openAddCustomerModal() {
@@ -249,12 +262,24 @@ Component.register('store-credits-index', {
             }
             this.isSaving = true;
             try {
-                await this.storeCreditApiService.adjust(action, customerId, amount, reason || 'Admin update', currencyId);
+                const args = [action, customerId, amount, reason || 'Admin update', currencyId];
+                if (action === 'deduct' && this.allowReserved) args.push(true);
+                await this.storeCreditApiService.adjust(...args);
                 this.createNotificationSuccess({ message: 'Store credit updated successfully.' });
                 this[modal] = false;
                 await this.fetchStoreCredits();
             } catch (error) {
-                this.createNotificationError({ message: error.response?.data?.message || error.message || 'Could not update store credit.' });
+                const details = error.response?.data;
+                if (action === 'deduct' && details?.requiresReservedConfirmation) {
+                    this.reservedConfirmRequired = true;
+                    this.allowReserved = false;
+                    this.reservedNotice = this.$t('store-credits.customer.reservedConfirmMessage', {
+                        available: Number(details.available).toFixed(2),
+                        reserved: Number(details.reserved).toFixed(2),
+                    });
+                } else {
+                    this.createNotificationError({ message: details?.message || error.message || 'Could not update store credit.' });
+                }
             } finally {
                 this.isSaving = false;
             }

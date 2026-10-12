@@ -3,6 +3,7 @@
 namespace Solu1StoreCredit\Subscriber;
 
 use Doctrine\DBAL\Connection;
+use Psr\Log\LoggerInterface;
 use Shopware\Core\Checkout\Order\OrderEntity;
 use Shopware\Core\Defaults;
 use Shopware\Core\Framework\Uuid\Uuid;
@@ -10,16 +11,21 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
 use Shopware\Core\Framework\DataAbstractionLayer\Search\Sorting\FieldSorting;
 use Shopware\Core\System\StateMachine\Event\StateMachineStateChangeEvent;
+use Solu1StoreCredit\Constants\StoreCreditConstants;
+use Solu1StoreCredit\Service\Refund\CardRefundedAmountUnavailableException;
 use Solu1StoreCredit\Service\StoreCreditManager;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class OrderRefundSubscriber implements EventSubscriberInterface
 {
+    private const REFUNDABLE_PAYMENT_STATES = ['paid', 'refunded_partially'];
+
     public function __construct(
         private readonly ?EntityRepository $orderReturnRepository,
         private readonly StoreCreditManager $manager,
         private readonly Connection $connection,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -38,7 +44,7 @@ class OrderRefundSubscriber implements EventSubscriberInterface
             throw new BadRequestHttpException('Shopware Commercial Return Management is required for store credit refunds.');
         }
         $returnId = $event->getTransition()->getEntityId();
-        $operationKey = 'return:' . $returnId;
+        $operationKey = StoreCreditConstants::REFUND_OPERATION_KEY_PREFIX . strtolower($returnId);
         $alreadyRecorded = $this->connection->fetchOne('SELECT id FROM solu1_store_credit_history WHERE operation_key = :key', ['key' => $operationKey]);
         $entries = (int) $this->connection->fetchOne('SELECT COUNT(*) FROM state_machine_history h JOIN state_machine_state s ON s.id = h.to_state_id WHERE h.entity_name = :entity AND h.referenced_id = :id AND h.referenced_version_id = :version AND s.technical_name = :state', [
             'entity' => 'order_return', 'id' => Uuid::fromHexToBytes($returnId), 'version' => Uuid::fromHexToBytes(Defaults::LIVE_VERSION), 'state' => 'store_credit',
@@ -60,8 +66,8 @@ class OrderRefundSubscriber implements EventSubscriberInterface
         }
         // @phpstan-ignore function.alreadyNarrowedType (Shopware 6.7.0 requires the transactions fallback.)
         $transaction = method_exists($order, 'getPrimaryOrderTransaction') ? $order->getPrimaryOrderTransaction() : $order->getTransactions()?->last();
-        if ($transaction?->getStateMachineState()?->getTechnicalName() !== 'paid') {
-            throw new BadRequestHttpException('Only paid orders can be refunded as store credit.');
+        if (!in_array($transaction?->getStateMachineState()?->getTechnicalName(), self::REFUNDABLE_PAYMENT_STATES, true)) {
+            throw new BadRequestHttpException('Only paid or partially refunded orders can be refunded as store credit.');
         }
         $amount = 0.0;
         foreach ($return->get('lineItems') ?? [] as $item) {
@@ -76,9 +82,28 @@ class OrderRefundSubscriber implements EventSubscriberInterface
         if (!is_finite($amount) || $amount <= 0) {
             throw new BadRequestHttpException('The return has no positive refund amount.');
         }
-        $this->manager->addCredit(
-            $order->getOrderCustomer()->getCustomerId(), round($amount, 2), $event->getContext(),
-            $order->getId(), $order->getCurrencyId(), 'Store credit refund for order ' . $order->getOrderNumber(), $operationKey,
-        );
+        try {
+            $result = $this->manager->creditForReturn(
+                $order->getOrderCustomer()->getCustomerId(), $order->getId(), round($amount, 2), $returnId, $event->getContext(),
+                $order->getCurrencyId(), 'Store credit refund for order ' . $order->getOrderNumber(),
+            );
+        } catch (CardRefundedAmountUnavailableException $e) {
+            throw new BadRequestHttpException('Card refund totals are unavailable, so the store credit refund cannot be capped safely. Try again later.', $e);
+        }
+
+        if ($result->isAlreadyProcessed()) {
+            return;
+        }
+        if ($result->getHistoryId() === null) {
+            throw new BadRequestHttpException('This order has already been refunded in full. No store credit was issued.');
+        }
+        if ($result->wasCapped()) {
+            $this->logger->warning('Store credit refund capped at the order\'s refundable remainder.', [
+                'orderReturnId' => $returnId,
+                'orderId' => $order->getId(),
+                'requestedAmount' => $result->getRequestedAmount(),
+                'creditedAmount' => $result->getCreditedAmount(),
+            ]);
+        }
     }
 }

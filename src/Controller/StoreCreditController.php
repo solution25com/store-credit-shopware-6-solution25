@@ -38,8 +38,16 @@ class StoreCreditController
             if (!is_string($id)) {
                 throw new \InvalidArgumentException('Customer ID is required.');
             }
-            $balance = $this->manager->getCreditBalance($id, $context);
-            return new JsonResponse(['success' => true, 'balance' => $balance['balanceAmount'], 'currencyId' => $balance['currencyId']]);
+            $breakdown = $this->manager->getBalanceBreakdown($id, $context);
+            return new JsonResponse([
+                'success' => true,
+                'balance' => $breakdown['balance'],
+                'currencyId' => $breakdown['currencyId'],
+                'reserved' => $breakdown['reserved'],
+                'available' => $breakdown['available'],
+                'reservedOrders' => $breakdown['reservedOrders'],
+                'expiredOrders' => $breakdown['expiredOrders'],
+            ]);
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['success' => false, 'message' => $e->getMessage()], 400);
         }
@@ -59,14 +67,48 @@ class StoreCreditController
                     throw new \InvalidArgumentException($key . ' must be a string.');
                 }
             }
+            if (!$add) {
+                $refusal = $this->refuseReservedDeduct($customerId, (float) $amount, $data['allowReserved'] ?? null, $context);
+                if ($refusal !== null) {
+                    return $refusal;
+                }
+            }
             $method = $add ? 'addCredit' : 'deductCredit';
             $historyId = $this->manager->$method($customerId, (float) $amount, $context, $data['orderId'] ?? null, $data['currencyId'] ?? null, $data['reason'] ?? null);
-            return new JsonResponse(['success' => true, 'historyId' => $historyId]);
+            return new JsonResponse([
+                'success' => true,
+                'historyId' => $historyId,
+                'balance' => $this->manager->getCreditBalance($customerId, $context)['balanceAmount'],
+            ]);
         } catch (\InvalidArgumentException|InsufficientCreditException|StoreCreditNotFoundException|\Symfony\Component\HttpFoundation\Exception\JsonException $e) {
             return new JsonResponse(['success' => false, 'message' => $e->getMessage()], 400);
         } catch (\Throwable $e) {
             $this->logger->error('Store credit adjustment failed.', ['exception' => $e]);
             return new JsonResponse(['success' => false, 'message' => 'Store credit could not be updated.'], 500);
         }
+    }
+
+    private function refuseReservedDeduct(string $customerId, float $amount, mixed $allowReserved, Context $context): ?JsonResponse
+    {
+        $breakdown = $this->manager->getBalanceBreakdown($customerId, $context);
+        if (
+            $breakdown['reserved'] <= 0.001
+            || $amount <= $breakdown['available'] + 0.001
+            || filter_var($allowReserved, \FILTER_VALIDATE_BOOLEAN, \FILTER_NULL_ON_FAILURE) === true
+        ) {
+            return null;
+        }
+
+        return new JsonResponse([
+            'success' => false,
+            'message' => sprintf(
+                'Only %s is available. %s is reserved for pending orders. Confirm to deduct reserved credit.',
+                number_format($breakdown['available'], 2),
+                number_format($breakdown['reserved'], 2)
+            ),
+            'available' => $breakdown['available'],
+            'reserved' => $breakdown['reserved'],
+            'requiresReservedConfirmation' => true,
+        ], 400);
     }
 }

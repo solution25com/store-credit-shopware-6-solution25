@@ -4,25 +4,25 @@
     {{ parent() }}
     {% set credit = page.extensions.storeCredit %}
     {% if activeRoute == 'frontend.checkout.confirm.page' and credit.maximum > 0 %}
-        <div class="cds-store-credit-wrapper" data-storecredit-plugin>
-            <div class="cds-checkout-store-credit">
-                <button class="btn cds-btn-store-credit w-100 d-flex align-items-center justify-content-between{% if not credit.expanded %} collapsed{% endif %}"
+        <div class="store-credit-checkout" data-storecredit-plugin>
+            <div class="store-credit-checkout__inner">
+                <button class="btn store-credit-checkout__toggle w-100 d-flex align-items-center justify-content-between{% if not credit.expanded %} collapsed{% endif %}"
                         type="button" data-bs-toggle="collapse" data-bs-target="#storeCredit"
                         aria-expanded="{{ credit.expanded ? 'true' : 'false' }}" aria-controls="storeCredit">
                     <span>{{ 'store-credit.title'|trans|sw_sanitize }}</span>
                     {% sw_icon 'arrow-medium-down' style { size: 'sm', ariaHidden: true } %}
                 </button>
                 <div class="collapse{% if credit.expanded %} show{% endif %}" id="storeCredit">
-                    <div class="card card-body cds-store-credit-card-body">
-                        <p>{{ 'store-credit.description'|trans|sw_sanitize }}: {{ credit.remaining|currency }}</p>
+                    <div class="store-credit-checkout__body">
+                        <p class="store-credit-checkout__balance">{{ 'store-credit.description'|trans|sw_sanitize }}: <strong>{{ credit.remaining|currency }}</strong></p>
                         <form id="store-credit-form" method="post" action="{{ path('frontend.store.credit.apply') }}">
-                            <div class="form-group">
-                                <label for="storeCreditAmount" class="form-label">{{ 'store-credit.label'|trans }}</label>
+                            <label for="storeCreditAmount" class="form-label">{{ 'store-credit.label'|trans }}</label>
+                            <div class="input-group">
                                 <input type="number" id="storeCreditAmount" name="amount" min="0.01" max="{{ credit.maximum }}" step="0.01" required
                                        class="form-control" aria-describedby="exceedCreditMessage">
-                                <small id="exceedCreditMessage" class="text-danger" role="status" hidden>{{ 'store-credit.amount-alert'|trans }}</small>
+                                <button type="submit" class="btn btn-secondary" id="applyCreditButton">{{ 'store-credit.button'|trans }}</button>
                             </div>
-                            <button type="submit" class="btn btn-secondary" id="applyCreditButton">{{ 'store-credit.button'|trans }}</button>
+                            <small id="exceedCreditMessage" class="text-danger" role="status" hidden>{{ 'store-credit.amount-alert'|trans }}</small>
                         </form>
                     </div>
                 </div>

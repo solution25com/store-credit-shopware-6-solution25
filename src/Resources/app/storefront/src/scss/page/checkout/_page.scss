@@ -1,4 +1,4 @@
-.cds-store-credit-wrapper {
+.store-credit-checkout {
     border: 1px solid #e5e5e5;
     border-radius: 6px;
     padding: 12px;
@@ -6,7 +6,8 @@
     background-color: #fff;
 }
 
-.cds-checkout-store-credit .cds-btn-store-credit { font-weight: 600; }
-.cds-store-credit-card-body #store-credit-form { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 8px; }
-.cds-store-credit-card-body .form-group { flex: 1 1 auto; }
-.cds-store-credit-card-body #exceedCreditMessage { padding-top: 4px; }
+.store-credit-checkout__inner .store-credit-checkout__toggle { font-weight: 600; padding: 0; border: 0; text-align: left; }
+.store-credit-checkout__body { padding-top: 12px; }
+.store-credit-checkout__body .store-credit-checkout__balance { margin-bottom: 12px; }
+.store-credit-checkout__body .input-group .btn { white-space: nowrap; }
+.store-credit-checkout__body #exceedCreditMessage:not([hidden]) { display: block; padding-top: 4px; }

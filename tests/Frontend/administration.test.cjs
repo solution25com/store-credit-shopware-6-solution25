@@ -91,6 +91,37 @@ for (const [version, components] of [['4.12.2 (Shopware 6.7.0)', lowest], ['5.2.
     });
 }
 
+test('deducting credit reserved for unpaid orders requires an explicit confirmation', async () => {
+    const calls = [];
+    let reservedRefusal = true;
+    const { wrapper, events } = customerTab(latest, true, {
+        balance: async () => ({ balance: 50, reserved: 40, available: 10, currencyId: 'currency', reservedOrders: [{ orderNumber: '10018' }], expiredOrders: [] }),
+        adjust: async (...args) => {
+            calls.push(args);
+            if (reservedRefusal) {
+                reservedRefusal = false;
+                throw { response: { data: { success: false, requiresReservedConfirmation: true, available: 10, reserved: 40 } } };
+            }
+            return { success: true };
+        },
+    });
+    await flushPromises();
+    assert.equal(wrapper.vm.reserved, 40);
+    assert.equal(wrapper.vm.available, 10);
+    assert.equal(wrapper.vm.reservedOrderNumbers, '10018');
+    wrapper.vm.openDeductModal();
+    wrapper.vm.deductAmount = 20;
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.deductCredit();
+    assert.equal(wrapper.vm.reservedConfirmRequired, true);
+    assert.equal(events.length, 0);
+    assert.deepEqual(calls[0], ['deduct', 'customer-a', 20, 'Admin update', 'currency']);
+    wrapper.vm.allowReserved = true;
+    await wrapper.vm.deductCredit();
+    assert.deepEqual(calls[1], ['deduct', 'customer-a', 20, 'Admin update', 'currency', true]);
+    assert.equal(wrapper.vm.showDeductModal, false);
+});
+
 test('a pending adjustment blocks duplicate submissions', async () => {
     let complete;
     let count = 0;

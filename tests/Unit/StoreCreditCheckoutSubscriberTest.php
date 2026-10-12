@@ -59,7 +59,7 @@ final class StoreCreditCheckoutSubscriberTest extends TestCase
         $converter = new StoreCreditCurrencyConverter($repository);
 
         $manager = $this->createMock(StoreCreditManager::class);
-        $manager->expects(self::once())->method('getCreditBalance')->with($customer->getId(), $context->getContext())
+        $manager->expects(self::once())->method('getAvailableCreditBalance')->with($customer->getId(), $context->getContext())
             ->willReturn(['balanceAmount' => $balance, 'currencyId' => $walletCurrency->getId()]);
         $manager->expects(self::never())->method('addCredit');
         $manager->expects(self::never())->method('deductCredit');

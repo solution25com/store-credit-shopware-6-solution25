@@ -17,7 +17,17 @@ Component.register('sw-customer-detail-store-credits', {
             currencyIsoCode: Shopware.Context.app.systemCurrencyISOCode || 'EUR',
             addAmount: null, deductAmount: null, addReason: '', deductReason: '',
             showAddModal: false, showDeductModal: false, loadSequence: 0,
+            reserved: 0, available: 0, reservedOrders: [], expiredOrders: [],
+            reservedConfirmRequired: false, allowReserved: false, reservedNotice: '',
         };
+    },
+    computed: {
+        reservedOrderNumbers() {
+            return this.reservedOrders.map((order) => order.orderNumber).join(', ');
+        },
+        expiredOrderNumbers() {
+            return this.expiredOrders.map((order) => order.orderNumber).join(', ');
+        },
     },
     watch: {
         'customer.id': {
@@ -28,11 +38,18 @@ Component.register('sw-customer-detail-store-credits', {
                 this.loadStoreCreditBalance();
             },
         },
+        deductAmount() {
+            this.resetReservedConfirmation();
+        },
     },
     methods: {
         async loadStoreCreditBalance() {
             const sequence = ++this.loadSequence;
             this.balance = 0;
+            this.reserved = 0;
+            this.available = 0;
+            this.reservedOrders = [];
+            this.expiredOrders = [];
             this.currencyId = null;
             this.currencyIsoCode = Shopware.Context.app.systemCurrencyISOCode || 'EUR';
             this.isLoading = false;
@@ -44,6 +61,10 @@ Component.register('sw-customer-detail-store-credits', {
                     ? await this.repositoryFactory.create('currency').get(data.currencyId, Shopware.Context.api) : null;
                 if (sequence !== this.loadSequence) return;
                 this.balance = Number(data.balance) || 0;
+                this.reserved = Number(data.reserved) || 0;
+                this.available = data.available === undefined ? this.balance : (Number(data.available) || 0);
+                this.reservedOrders = data.reservedOrders || [];
+                this.expiredOrders = data.expiredOrders || [];
                 this.currencyId = data.currencyId;
                 this.currencyIsoCode = currency?.isoCode || Shopware.Context.app.systemCurrencyISOCode || 'EUR';
             } catch (error) {
@@ -57,7 +78,12 @@ Component.register('sw-customer-detail-store-credits', {
         openAddModal() { this.addAmount = null; this.addReason = ''; this.showAddModal = true; },
         closeAddModal() { this.showAddModal = false; },
         openDeductModal() { this.deductAmount = null; this.deductReason = ''; this.showDeductModal = true; },
-        closeDeductModal() { this.showDeductModal = false; },
+        closeDeductModal() { this.showDeductModal = false; this.resetReservedConfirmation(); },
+        resetReservedConfirmation() {
+            this.reservedConfirmRequired = false;
+            this.allowReserved = false;
+            this.reservedNotice = '';
+        },
         addCredit() { return this.adjustCredit('add', this.addAmount, this.addReason); },
         deductCredit() { return this.adjustCredit('deduct', this.deductAmount, this.deductReason); },
         async adjustCredit(action, value, reason) {
@@ -69,13 +95,25 @@ Component.register('sw-customer-detail-store-credits', {
             }
             this.isSaving = true;
             try {
-                await this.storeCreditApiService.adjust(action, this.customer.id, amount, reason || 'Admin update', this.currencyId);
+                const args = [action, this.customer.id, amount, reason || 'Admin update', this.currencyId];
+                if (action === 'deduct' && this.allowReserved) args.push(true);
+                await this.storeCreditApiService.adjust(...args);
                 this.createNotificationSuccess({ message: 'Store credit updated successfully.' });
                 this.closeAddModal();
                 this.closeDeductModal();
                 await this.loadStoreCreditBalance();
             } catch (error) {
-                this.createNotificationError({ message: error.response?.data?.message || error.message || 'Could not update store credit.' });
+                const details = error.response?.data;
+                if (details?.requiresReservedConfirmation) {
+                    this.reservedConfirmRequired = true;
+                    this.allowReserved = false;
+                    this.reservedNotice = this.$t('store-credits.customer.reservedConfirmMessage', {
+                        available: this.formatCurrency(details.available),
+                        reserved: this.formatCurrency(details.reserved),
+                    });
+                } else {
+                    this.createNotificationError({ message: details?.message || error.message || 'Could not update store credit.' });
+                }
             } finally {
                 this.isSaving = false;
             }

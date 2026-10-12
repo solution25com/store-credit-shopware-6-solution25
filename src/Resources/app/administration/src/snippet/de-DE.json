@@ -1,0 +1,30 @@
+{
+    "store-credits": {
+        "listing": {
+            "searchPlaceholder": "Nach Kundenname, E-Mail oder Kundennummer suchen..."
+        },
+        "customer": {
+            "tabTitle": "Guthaben",
+            "currentBalance": "Aktuelles Guthaben",
+            "addCredit": "Guthaben hinzufügen",
+            "deductCredit": "Guthaben abziehen",
+            "amount": "Betrag",
+            "amountPlaceholder": "Betrag eingeben",
+            "reason": "Grund",
+            "reasonPlaceholder": "Grund eingeben (optional)",
+            "reserved": "Für offene Bestellungen reserviert",
+            "available": "Verfügbar",
+            "reservedOn": "Reserviert für Bestellung(en): {orders}",
+            "expiredOn": "Nicht mehr reserviert (älter als die Reservierungsdauer): {orders}",
+            "reservedConfirmMessage": "Nur {available} ist verfügbar. {reserved} ist für offene Bestellungen reserviert. Bestätigen Sie, um reserviertes Guthaben abzuziehen.",
+            "reservedConfirmCheckbox": "Reserviertes Guthaben trotzdem abziehen"
+        }
+    },
+    "sw-privileges": {
+        "permissions": {
+            "store_credit": {
+                "label": "Guthaben"
+            }
+        }
+    }
+}

@@ -32,7 +32,7 @@ class StoreCreditCheckoutSubscriber implements EventSubscriberInterface
         if (!$customer) {
             return;
         }
-        $balance = $this->manager->getCreditBalance($customer->getId(), $context->getContext());
+        $balance = $this->manager->getAvailableCreditBalance($customer->getId(), $context->getContext());
         $applied = 0.0;
         foreach ($event->getPage()->getCart()->getLineItems()->filter(StoreCreditLineItem::matches(...)) as $item) {
             $applied += abs($item->getPrice()?->getTotalPrice() ?? 0.0);
@@ -51,7 +51,7 @@ class StoreCreditCheckoutSubscriber implements EventSubscriberInterface
             'balance' => $convertedBalance,
             'remaining' => $remaining,
             'maximum' => $this->converter->roundCheckoutAmount($available, $context),
-            'expanded' => $expanded === null || (bool) $expanded,
+            'expanded' => (bool) $expanded,
         ]));
     }
 }

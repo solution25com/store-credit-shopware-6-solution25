@@ -44,6 +44,23 @@ final class StoreCreditTest extends TestCase
         return self::getContainer()->get(StoreCreditManager::class);
     }
 
+    private function payOrder(string $orderId, SalesChannelContext $context, string $action = 'paid'): void
+    {
+        $transactionId = self::getContainer()->get(Connection::class)->fetchOne(
+            'SELECT LOWER(HEX(id)) FROM order_transaction WHERE order_id = UNHEX(:id) AND version_id = UNHEX(:version) ORDER BY created_at DESC LIMIT 1',
+            ['id' => $orderId, 'version' => Defaults::LIVE_VERSION]
+        );
+        self::getContainer()->get(\Shopware\Core\System\StateMachine\StateMachineRegistry::class)->transition(
+            new \Shopware\Core\System\StateMachine\Transition('order_transaction', $transactionId, $action, 'stateId'),
+            $context->getContext()
+        );
+    }
+
+    private function available(string $customerId, SalesChannelContext $context): float
+    {
+        return $this->manager()->getAvailableCreditBalance($customerId, $context->getContext())['balanceAmount'];
+    }
+
     private function customerContext(): SalesChannelContext
     {
         $channelId = self::getContainer()->get(Connection::class)->fetchOne('SELECT LOWER(HEX(id)) FROM sales_channel WHERE type_id = UNHEX(:type) LIMIT 1', ['type' => Defaults::SALES_CHANNEL_TYPE_STOREFRONT]);
@@ -85,7 +102,7 @@ final class StoreCreditTest extends TestCase
         ]);
     }
 
-    public function testConvertedOrderDeductsWalletCurrencyAndRecordsTheLedger(): void
+    public function testConvertedOrderReservesWalletCurrencyAndDeductsWhenPaid(): void
     {
         $context = $this->withCurrency($this->customerContext(), 1.25);
         $customerId = $context->getCustomer()->getId();
@@ -93,8 +110,13 @@ final class StoreCreditTest extends TestCase
         $cart = $this->cart($context, 100.0, 12.50);
         self::assertSame(-12.5, $cart->getLineItems()->get(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID)->getPrice()->getTotalPrice());
         $orderId = self::getContainer()->get(OrderPersister::class)->persist($cart, $context);
-        self::assertSame(['balanceAmount' => 40.0, 'currencyId' => Defaults::CURRENCY], $this->manager()->getCreditBalance($customerId, $context->getContext()));
+        self::assertSame(['balanceAmount' => 50.0, 'currencyId' => Defaults::CURRENCY], $this->manager()->getCreditBalance($customerId, $context->getContext()));
+        self::assertSame(40.0, $this->available($customerId, $context));
         $db = self::getContainer()->get(Connection::class);
+        self::assertSame(10.0, (float) $db->fetchOne("SELECT JSON_UNQUOTE(JSON_EXTRACT(custom_fields, '$.store_credit_pending_amount')) FROM `order` WHERE id = UNHEX(:id)", ['id' => $orderId]));
+        self::assertFalse($db->fetchOne('SELECT id FROM solu1_store_credit_history WHERE operation_key = :key', ['key' => 'order:' . $orderId]));
+        $this->payOrder($orderId, $context);
+        self::assertSame(['balanceAmount' => 40.0, 'currencyId' => Defaults::CURRENCY], $this->manager()->getCreditBalance($customerId, $context->getContext()));
         $entry = $db->fetchAssociative('SELECT amount, LOWER(HEX(currency_id)) AS currency FROM solu1_store_credit_history WHERE operation_key = :key', ['key' => 'order:' . $orderId]);
         self::assertSame(10.0, (float) $entry['amount']);
         self::assertSame(Defaults::CURRENCY, $entry['currency']);
@@ -108,7 +130,9 @@ final class StoreCreditTest extends TestCase
         $this->manager()->addCredit($customerId, 10.0, $context->getContext());
         $cart = $this->cart($context, 100.0, 99.0);
         self::assertSame(-11.7, $cart->getLineItems()->get(StoreCreditConstants::STORE_CREDIT_LINE_ITEM_ID)->getPrice()->getTotalPrice());
-        self::getContainer()->get(OrderPersister::class)->persist($cart, $context);
+        $orderId = self::getContainer()->get(OrderPersister::class)->persist($cart, $context);
+        self::assertSame(0.0, $this->available($customerId, $context));
+        $this->payOrder($orderId, $context);
         self::assertSame(0.0, $this->manager()->getCreditBalance($customerId, $context->getContext())['balanceAmount']);
     }
 
@@ -140,7 +164,9 @@ final class StoreCreditTest extends TestCase
         $customerId = $context->getCustomer()->getId();
         $this->manager()->addCredit($customerId, 50.0, $context->getContext(), currencyId: $other->getCurrencyId());
         $cart = $this->cart($context, 100.0, 10.0);
-        self::getContainer()->get(OrderPersister::class)->persist($cart, $context);
+        $orderId = self::getContainer()->get(OrderPersister::class)->persist($cart, $context);
+        self::assertSame(37.5, $this->available($customerId, $context));
+        $this->payOrder($orderId, $context);
         self::assertSame(['balanceAmount' => 37.5, 'currencyId' => $other->getCurrencyId()], $this->manager()->getCreditBalance($customerId, $context->getContext()));
     }
 
@@ -169,7 +195,9 @@ final class StoreCreditTest extends TestCase
         $other->setPayloadValue('storeCreditExchangeRate', 1000000.0);
         $cart->add($other);
         $cart = self::getContainer()->get(CartCalculator::class)->calculate($cart, $context);
-        self::getContainer()->get(OrderPersister::class)->persist($cart, $context);
+        $orderId = self::getContainer()->get(OrderPersister::class)->persist($cart, $context);
+        self::assertSame(8.38, $this->available($customerId, $context));
+        $this->payOrder($orderId, $context);
         self::assertSame(8.38, $this->manager()->getCreditBalance($customerId, $context->getContext())['balanceAmount']);
     }
 
@@ -274,7 +302,7 @@ final class StoreCreditTest extends TestCase
         self::assertSame(100.0, $cart->getPrice()->getPositionPrice());
     }
 
-    public function testOrderAndDeductionArePersistedTogether(): void
+    public function testOrderReservesOnPlacementAndDeductsOnceWhenPaid(): void
     {
         $context = $this->customerContext();
         $id = $context->getCustomer()->getId();
@@ -283,33 +311,56 @@ final class StoreCreditTest extends TestCase
         $persister = self::getContainer()->get(OrderPersister::class);
         self::assertInstanceOf(StoreCreditOrderPersister::class, $persister);
         $orderId = $persister->persist($cart, $context);
-        self::assertSame(30.0, $this->manager()->getCreditBalance($id, $context->getContext())['balanceAmount']);
         $db = self::getContainer()->get(Connection::class);
+        self::assertSame(50.0, $this->manager()->getCreditBalance($id, $context->getContext())['balanceAmount']);
+        self::assertSame(30.0, $this->available($id, $context));
+        self::assertSame(0, (int) $db->fetchOne('SELECT COUNT(*) FROM solu1_store_credit_history WHERE operation_key = :key', ['key' => 'order:' . $orderId]));
+        $this->payOrder($orderId, $context);
+        self::assertSame(30.0, $this->manager()->getCreditBalance($id, $context->getContext())['balanceAmount']);
+        $this->payOrder($orderId, $context, 'reopen');
+        $this->payOrder($orderId, $context);
+        self::assertSame(30.0, $this->manager()->getCreditBalance($id, $context->getContext())['balanceAmount']);
         self::assertSame(1, (int) $db->fetchOne('SELECT COUNT(*) FROM solu1_store_credit_history WHERE operation_key = :key AND order_id = UNHEX(:id)', ['key' => 'order:' . $orderId, 'id' => $orderId]));
         self::assertSame(1, (int) $db->fetchOne('SELECT COUNT(*) FROM `order` WHERE id = UNHEX(:id)', ['id' => $orderId]));
     }
 
-    public function testOrderIsRolledBackWhenDeductionFails(): void
+    public function testUnpaidReservationsExpireAfterTheConfiguredAge(): void
     {
-        $context = $this->withCurrency($this->customerContext(), 1.25);
-        $this->manager()->addCredit($context->getCustomer()->getId(), 50.0, $context->getContext());
-        $cart = $this->cart($context);
-        $db = self::getContainer()->get(Connection::class);
-        $before = $db->fetchOne('SELECT COUNT(*) FROM `order`');
-        $manager = $this->createPartialMock(StoreCreditManager::class, ['deductCredit']);
-        $ref = new \ReflectionClass(StoreCreditManager::class);
-        $ref->getConstructor()->invoke($manager, self::getContainer()->get('solu1_store_credit.repository'), self::getContainer()->get('solu1_store_credit_history.repository'), $db);
-        $manager->method('deductCredit')->willThrowException(new \RuntimeException('Injected ledger failure'));
-        $inner = self::getContainer()->get(StoreCreditOrderPersister::class . '.inner');
-        try {
-            (new StoreCreditOrderPersister($inner, $manager, $db, self::getContainer()->get(\Solu1StoreCredit\Service\StoreCreditCurrencyConverter::class)))->persist($cart, $context);
-            self::fail('The ledger failure must propagate.');
-        } catch (\RuntimeException $e) {
-            self::assertSame('Injected ledger failure', $e->getMessage());
-            self::assertSame($before, $db->fetchOne('SELECT COUNT(*) FROM `order`'));
-            self::assertSame(50.0, $this->manager()->getCreditBalance($context->getCustomer()->getId(), $context->getContext())['balanceAmount']);
-        }
+        $context = $this->customerContext();
+        $id = $context->getCustomer()->getId();
+        $this->manager()->addCredit($id, 50.0, $context->getContext());
+        $orderId = self::getContainer()->get(OrderPersister::class)->persist($this->cart($context), $context);
+        self::assertSame(30.0, $this->available($id, $context));
+        self::getContainer()->get(Connection::class)->executeStatement('UPDATE `order` SET order_date_time = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 20 DAY) WHERE id = UNHEX(:id)', ['id' => $orderId]);
+        $config = self::getContainer()->get(SystemConfigService::class);
+        $config->set(StoreCreditConstants::CONFIG_PENDING_RESERVATION_MAX_AGE_DAYS, 14);
+        self::assertSame(50.0, $this->available($id, $context));
+        self::assertCount(1, $this->manager()->getBalanceBreakdown($id, $context->getContext())['expiredOrders']);
+        $config->set(StoreCreditConstants::CONFIG_PENDING_RESERVATION_MAX_AGE_DAYS, 0);
+        self::assertSame(30.0, $this->available($id, $context));
     }
+
+    public function testFailedPaidDeductionKeepsTheOrderPaidAndTagsIt(): void
+    {
+        $context = $this->customerContext();
+        $id = $context->getCustomer()->getId();
+        $this->manager()->addCredit($id, 50.0, $context->getContext());
+        $orderId = self::getContainer()->get(OrderPersister::class)->persist($this->cart($context), $context);
+        $this->manager()->deductCredit($id, 45.0, $context->getContext());
+        $this->payOrder($orderId, $context);
+        $db = self::getContainer()->get(Connection::class);
+        self::assertSame('paid', $db->fetchOne('SELECT s.technical_name FROM order_transaction t JOIN state_machine_state s ON s.id = t.state_id WHERE t.order_id = UNHEX(:id) ORDER BY t.created_at DESC LIMIT 1', ['id' => $orderId]));
+        self::assertSame(5.0, $this->manager()->getCreditBalance($id, $context->getContext())['balanceAmount']);
+        self::assertNotNull($db->fetchOne("SELECT JSON_EXTRACT(custom_fields, '$.store_credit_deduct_failed') FROM `order` WHERE id = UNHEX(:id)", ['id' => $orderId]));
+        $tagged = static fn (): int => (int) $db->fetchOne("SELECT COUNT(*) FROM order_tag ot JOIN tag t ON t.id = ot.tag_id WHERE ot.order_id = UNHEX(:id) AND t.name = 'store-credit-issue'", ['id' => $orderId]);
+        self::assertSame(1, $tagged());
+        $this->manager()->addCredit($id, 20.0, $context->getContext());
+        $this->payOrder($orderId, $context, 'reopen');
+        $this->payOrder($orderId, $context);
+        self::assertSame(5.0, $this->manager()->getCreditBalance($id, $context->getContext())['balanceAmount']);
+        self::assertSame(0, $tagged());
+    }
+
     public function testAdminApiPermissionsAndMalformedPayloads(): void
     {
         $context = $this->customerContext();
@@ -431,10 +482,10 @@ final class StoreCreditTest extends TestCase
         }
         $registry = self::getContainer()->get(\Shopware\Core\System\StateMachine\StateMachineRegistry::class);
         $registry->transition(new \Shopware\Core\System\StateMachine\Transition('order_return', $returnIds[0], 'mark_as_store_credit', 'stateId'), $context->getContext());
-        self::assertSame(12.5, $this->manager()->getCreditBalance($customerId, $context->getContext())['balanceAmount']);
+        self::assertSame(13.5, $this->manager()->getCreditBalance($customerId, $context->getContext())['balanceAmount']);
         $registry->transition(new \Shopware\Core\System\StateMachine\Transition('order_return', $returnIds[0], 'mark_as_open', 'stateId'), $context->getContext());
         $registry->transition(new \Shopware\Core\System\StateMachine\Transition('order_return', $returnIds[0], 'mark_as_store_credit', 'stateId'), $context->getContext());
-        self::assertSame(12.5, $this->manager()->getCreditBalance($customerId, $context->getContext())['balanceAmount']);
+        self::assertSame(13.5, $this->manager()->getCreditBalance($customerId, $context->getContext())['balanceAmount']);
         self::assertSame(1, (int) $db->fetchOne('SELECT COUNT(*) FROM solu1_store_credit_history WHERE operation_key = :key', ['key' => 'return:' . $returnIds[0]]));
         self::assertSame($stateId, $returns->search(new Criteria([$returnIds[1]]), $context->getContext())->first()->get('stateId'));
         // An unpaid order must leave both the return state and ledger unchanged.
@@ -445,7 +496,7 @@ final class StoreCreditTest extends TestCase
             self::fail('Unpaid return must fail.');
         } catch (\Symfony\Component\HttpKernel\Exception\BadRequestHttpException) {
             self::assertSame($stateId, $returns->search(new Criteria([$returnIds[1]]), $context->getContext())->first()->get('stateId'));
-            self::assertSame(12.5, $this->manager()->getCreditBalance($customerId, $context->getContext())['balanceAmount']);
+            self::assertSame(13.5, $this->manager()->getCreditBalance($customerId, $context->getContext())['balanceAmount']);
         }
     }
 

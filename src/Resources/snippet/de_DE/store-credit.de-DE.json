@@ -1,0 +1,31 @@
+{
+    "store-credit": {
+        "title": "Guthaben",
+        "description": "Guthaben-Saldo",
+        "label": "Betrag als Rabatt anwenden",
+        "amount-alert": "Der Betrag überschreitet das maximal erlaubte Guthaben pro Bestellung.",
+        "button": "Guthaben anwenden",
+        "invalidAmount": "Geben Sie einen positiven Betrag mit höchstens zwei Nachkommastellen ein.",
+        "applied": "Das Guthaben wurde bis zum verfügbaren Saldo und Bestelllimit angewendet.",
+        "unavailable": "Für diesen Warenkorb oder diese Währung ist kein Guthaben verfügbar.",
+        "accountTitle": "Guthaben",
+        "date": "Datum und Uhrzeit",
+        "amount": "Betrag",
+        "reason": "Grund",
+        "noReason": "Nicht angegeben",
+        "noHistory": "Keine Guthaben-Historie gefunden.",
+        "pagination": "Seitennavigation der Guthaben-Historie",
+        "previous": "Zurück",
+        "next": "Weiter",
+        "placement": {
+            "clampedTo": "Ihr Guthaben wurde auf %amount% reduziert, da Ihr verfügbarer Saldo geringer ist als der angewendete Betrag.",
+            "removed": "Ihr Guthaben konnte nicht angewendet werden, da kein Saldo verfügbar ist."
+        },
+        "account": {
+            "balance": "Guthaben",
+            "reserved": "Für offene Bestellungen reserviert",
+            "reservedOn": "Reserviert für Bestellung(en):",
+            "available": "Verfügbar"
+        }
+    }
+}

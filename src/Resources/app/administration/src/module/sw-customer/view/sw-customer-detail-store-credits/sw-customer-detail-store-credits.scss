@@ -47,5 +47,24 @@
         gap: 12px;
         flex-wrap: wrap;
     }
-}
 
+    &__reservations {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 4px 16px;
+        margin: 0 0 30px;
+
+        dt {
+            font-weight: 600;
+        }
+
+        dd {
+            margin: 0;
+        }
+    }
+
+    &__reservation-orders {
+        display: block;
+        color: var(--color-text-secondary-default);
+    }
+}

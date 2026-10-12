@@ -5,6 +5,25 @@
         <h1>{{ 'store-credit.accountTitle'|trans }}</h1>
         <p class="balance-display">{{ 'store-credit.description'|trans }}:
             {{ (storeCredit.balance|default(0))|currency(storeCredit.currency.isoCode|default(context.currency.isoCode)) }}</p>
+        {% block page_account_store_credit_balance_breakdown %}
+            {% if storeCreditBreakdown and storeCreditBreakdown.reserved > 0 %}
+                {% set walletIso = storeCredit.currency.isoCode|default(context.currency.isoCode) %}
+                <dl class="store-credit-balance-summary">
+                    <dt>{{ 'store-credit.account.balance'|trans|sw_sanitize }}</dt>
+                    <dd>{{ storeCreditBreakdown.balance|currency(walletIso) }}</dd>
+                    <dt>{{ 'store-credit.account.reserved'|trans|sw_sanitize }}</dt>
+                    <dd>
+                        {{ storeCreditBreakdown.reserved|currency(walletIso) }}
+                        <small class="store-credit-balance-summary__orders">
+                            {{ 'store-credit.account.reservedOn'|trans|sw_sanitize }}
+                            {% for order in storeCreditBreakdown.reservedOrders %}{{ order.orderNumber }}{% if not loop.last %}, {% endif %}{% endfor %}
+                        </small>
+                    </dd>
+                    <dt>{{ 'store-credit.account.available'|trans|sw_sanitize }}</dt>
+                    <dd>{{ storeCreditBreakdown.available|currency(walletIso) }}</dd>
+                </dl>
+            {% endif %}
+        {% endblock %}
         {% if storeCreditsHistory|length %}
             <div class="table-responsive">
                 <table class="table">

@@ -12,9 +12,9 @@ export default class StoreCreditApiService extends ApiService {
         return ApiService.handleResponse(response);
     }
 
-    async adjust(action, customerId, amount, reason, currencyId = null) {
+    async adjust(action, customerId, amount, reason, currencyId = null, allowReserved = false) {
         const response = await this.httpClient.post(`${this.getApiBasePath()}/${action}`, {
-            customerId, amount, reason, currencyId,
+            customerId, amount, reason, currencyId, allowReserved,
         }, { headers: this.getBasicHeaders() });
         return ApiService.handleResponse(response);
     }

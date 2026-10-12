@@ -4,43 +4,69 @@
         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/shopware/trunk/src/Core/System/SystemConfig/Schema/config.xsd">
 
     <card>
-        <title>Store Credit Limits</title>
+        <title lang="en-GB">Store Credit Limits</title>
+        <title lang="de-DE">Guthaben-Limits</title>
 
         <input-field type="float">
             <name>maxCreditPerOrder</name>
             <label lang="en-GB">Maximum credit per order</label>
+            <label lang="de-DE">Maximales Guthaben pro Bestellung</label>
             <default>0</default>
             <helpText lang="en-GB">Maximum store credit amount that can be applied per order (0 = no limit)</helpText>
+            <helpText lang="de-DE">Maximaler Guthabenbetrag, der pro Bestellung angewendet werden kann (0 = kein Limit)</helpText>
         </input-field>
     </card>
 
     <card>
-        <title>Product Restrictions</title>
+        <title lang="en-GB">Pending Order Reservations</title>
+        <title lang="de-DE">Reservierungen für offene Bestellungen</title>
+
+        <input-field type="int">
+            <name>pendingReservationMaxAgeDays</name>
+            <label lang="en-GB">Reservation age limit (days)</label>
+            <label lang="de-DE">Reservierungsdauer (Tage)</label>
+            <default>14</default>
+            <helpText lang="en-GB">Store credit applied to an unpaid order is held back from the customer's available balance for this many days after the order date. Older unpaid orders release it. 0 = hold indefinitely.</helpText>
+            <helpText lang="de-DE">Guthaben, das auf eine unbezahlte Bestellung angewendet wurde, wird so viele Tage nach dem Bestelldatum vom verfügbaren Guthaben zurückgehalten. Ältere unbezahlte Bestellungen geben es frei. 0 = unbegrenzt zurückhalten.</helpText>
+        </input-field>
+    </card>
+
+    <card>
+        <title lang="en-GB">Product Restrictions</title>
+        <title lang="de-DE">Produkteinschränkungen</title>
 
         <component name="sw-entity-multi-id-select">
             <name>restrictedProducts</name>
             <entity>product</entity>
             <label lang="en-GB">Restricted products</label>
+            <label lang="de-DE">Eingeschränkte Produkte</label>
             <helpText lang="en-GB">Select the products for which you want to be restricted from using store credits</helpText>
+            <helpText lang="de-DE">Wählen Sie die Produkte aus, für die kein Guthaben verwendet werden darf</helpText>
         </component>
     </card>
 
     <card>
-    <title>Commercial return refunds</title>
+    <title lang="en-GB">Commercial return refunds</title>
+    <title lang="de-DE">Erstattungen über Commercial-Retouren</title>
     <input-field type="bool">
         <name>runInstallOrderStateCommand</name>
         <label lang="en-GB">Enable store credit refunds</label>
+        <label lang="de-DE">Erstattung als Guthaben aktivieren</label>
         <helpText lang="en-GB">Requires Commercial Return Management. Configure under All Sales Channels. Disabling removes the refund action and preserves previous refunds.</helpText>
+        <helpText lang="de-DE">Erfordert Commercial Return Management. Unter „Alle Verkaufskanäle“ konfigurieren. Deaktivieren entfernt die Erstattungsaktion und behält bisherige Erstattungen.</helpText>
     </input-field>
     </card>
 
     <card>
-        <title>Checkout behaviour</title>
+        <title lang="en-GB">Checkout behaviour</title>
+        <title lang="de-DE">Checkout-Verhalten</title>
         <input-field type="bool">
             <name>expandStoreCreditByDefault</name>
             <label lang="en-GB">Expand store credit section by default</label>
-            <default>true</default>
+            <label lang="de-DE">Guthabenbereich standardmäßig aufklappen</label>
+            <default>false</default>
             <helpText lang="en-GB">If enabled, the store credit panel on checkout confirm will be expanded by default instead of collapsed.</helpText>
+            <helpText lang="de-DE">Wenn aktiviert, ist der Guthabenbereich auf der Bestellbestätigungsseite standardmäßig aufgeklappt.</helpText>
         </input-field>
     </card>
 

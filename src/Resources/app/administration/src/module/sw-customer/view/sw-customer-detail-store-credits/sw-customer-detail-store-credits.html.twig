@@ -26,6 +26,32 @@
         </div>
         {% endblock %}
 
+        {% block sw_customer_detail_store_credits_reservations %}
+        <dl
+            v-if="reserved > 0 || expiredOrders.length > 0"
+            class="sw-customer-detail-store-credits__reservations"
+        >
+            <dt>{{ $t('store-credits.customer.reserved') }}</dt>
+            <dd>
+                {{ formatCurrency(reserved) }}
+                <small
+                    v-if="reservedOrderNumbers"
+                    class="sw-customer-detail-store-credits__reservation-orders"
+                >
+                    {{ $t('store-credits.customer.reservedOn', { orders: reservedOrderNumbers }) }}
+                </small>
+                <small
+                    v-if="expiredOrderNumbers"
+                    class="sw-customer-detail-store-credits__reservation-orders"
+                >
+                    {{ $t('store-credits.customer.expiredOn', { orders: expiredOrderNumbers }) }}
+                </small>
+            </dd>
+            <dt>{{ $t('store-credits.customer.available') }}</dt>
+            <dd>{{ formatCurrency(available) }}</dd>
+        </dl>
+        {% endblock %}
+
         {% block sw_customer_detail_store_credits_actions %}
         <div class="sw-customer-detail-store-credits__actions">
             <mt-button
@@ -124,6 +150,19 @@
                 :label="$t('store-credits.customer.reason')"
                 :placeholder="$t('store-credits.customer.reasonPlaceholder')"
             />
+
+            <mt-banner
+                v-if="reservedConfirmRequired"
+                variant="attention"
+            >
+                {{ reservedNotice }}
+            </mt-banner>
+
+            <mt-checkbox
+                v-if="reservedConfirmRequired"
+                v-model="allowReserved"
+                :label="$t('store-credits.customer.reservedConfirmCheckbox')"
+            />
         </sw-container>
         {% endblock %}
 
@@ -137,7 +176,7 @@
 
             <mt-button
                 variant="critical"
-                :disabled="isSaving || !acl.can('store_credit.editor') || isLoading || !deductAmount || deductAmount <= 0 || deductAmount > balance"
+                :disabled="isSaving || !acl.can('store_credit.editor') || isLoading || !deductAmount || deductAmount <= 0 || deductAmount > balance || (reservedConfirmRequired && !allowReserved)"
                 @click="deductCredit"
             >
                 {{ $t('store-credits.customer.deductCredit') }}

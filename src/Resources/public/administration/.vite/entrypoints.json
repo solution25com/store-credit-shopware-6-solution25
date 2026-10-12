@@ -3,11 +3,11 @@
   "entryPoints": {
     "store-credit": {
       "css": [
-        "/bundles/storecredit/administration/assets/store-credit-BmliWCKX.css"
+        "/bundles/storecredit/administration/assets/store-credit-D4KVDy9P.css"
       ],
       "dynamic": [],
       "js": [
-        "/bundles/storecredit/administration/assets/store-credit-B6sn8wrI.js"
+        "/bundles/storecredit/administration/assets/store-credit-32RF-zZa.js"
       ],
       "legacy": false,
       "preload": []

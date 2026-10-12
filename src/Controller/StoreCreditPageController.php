@@ -10,6 +10,7 @@ use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Storefront\Controller\StorefrontController;
 use Shopware\Storefront\Page\GenericPageLoaderInterface;
 use Solu1StoreCredit\Core\Content\StoreCredit\StoreCreditEntity;
+use Solu1StoreCredit\Service\StoreCreditManager;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -21,6 +22,7 @@ class StoreCreditPageController extends StorefrontController
         private readonly EntityRepository $creditRepository,
         private readonly EntityRepository $historyRepository,
         private readonly GenericPageLoaderInterface $pageLoader,
+        private readonly StoreCreditManager $manager,
     ) {
     }
 
@@ -37,7 +39,9 @@ class StoreCreditPageController extends StorefrontController
         $pageNumber = max(1, min(1000000, $request->query->getInt('page', 1)));
         $history = [];
         $totalPages = 1;
+        $breakdown = null;
         if ($credit) {
+            $breakdown = $this->manager->getBalanceBreakdown($customer->getId(), $context->getContext());
             $criteria = (new Criteria())->addFilter(new EqualsFilter('storeCreditId', $credit->getId()))
                 ->addAssociation('currency')->addSorting(new FieldSorting('createdAt', 'DESC'), new FieldSorting('id', 'DESC'))
                 ->setTotalCountMode(Criteria::TOTAL_COUNT_MODE_EXACT)->setLimit(10)->setOffset(($pageNumber - 1) * 10);
@@ -49,7 +53,7 @@ class StoreCreditPageController extends StorefrontController
         $page->getMetaInformation()?->setRobots('noindex,follow');
 
         return $this->renderStorefront('@StoreCredit/storefront/page/account/store-credit.html.twig', [
-            'page' => $page, 'storeCredit' => $credit, 'storeCreditsHistory' => $history,
+            'page' => $page, 'storeCredit' => $credit, 'storeCreditsHistory' => $history, 'storeCreditBreakdown' => $breakdown,
             'storeCreditHistoryPage' => $pageNumber, 'storeCreditHistoryTotalPages' => $totalPages,
         ]);
     }

@@ -16,6 +16,16 @@
         "noHistory": "No store credit history found.",
         "pagination": "Store credit history pagination",
         "previous": "Previous",
-        "next": "Next"
+        "next": "Next",
+        "placement": {
+            "clampedTo": "Your store credit was reduced to %amount% because your available balance is lower than the amount you applied.",
+            "removed": "Your store credit could not be applied because no balance is available."
+        },
+        "account": {
+            "balance": "Balance",
+            "reserved": "Reserved for pending orders",
+            "reservedOn": "Held for order(s):",
+            "available": "Available"
+        }
     }
 }
