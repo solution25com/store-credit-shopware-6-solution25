@@ -1,11 +1,35 @@
- # Changelog
+# Changelog
 
-  All notable changes to the Store Credit plugin for Shopware 6 are documented in this file.
+All notable changes to the Store Credit plugin for Shopware 6 are documented in this file.
 
-  | Shopware | Branch | Plugin version |
-  |---|---|---|
-  | 6.6.x | `main` | 1.1.x |
-  | 6.7.x | `main-6.7` | 2.x |
+| Shopware | Branch | Plugin version |
+|---|---|---|
+| 6.6.x | `main` | 1.x |
+| 6.7.x | `main-6.7` | 2.x |
+
+## [2.1.0] - 2026-10-12
+
+### Added
+- Credit applied to unpaid orders is reserved and no longer counts as available. Reserved and available credit are shown
+in the Administration, the Admin API balance endpoint and the customer account page.
+- Setting *Reservation age limit (days)* (default 14, 0 = hold indefinitely) after which unpaid orders stop reserving
+credit.
+- Deducting reserved credit in the Administration requires a confirmation.
+- Refunds to store credit are capped at what the order may still refund.
+- Extension point `CardRefundedAmountProviderInterface` (service tag `solu1_store_credit.card_refunded_provider`) so
+refunds made through a payment provider also count towards the cap.
+- Checkout notice when applied store credit is reduced or removed because the available balance dropped.
+- Orders whose store credit could not be deducted when paid are tagged `store-credit-issue` for review.
+- German storefront texts and plugin configuration labels.
+
+### Changed
+- Store credit is reserved when the order is placed and deducted when the payment is paid, instead of being deducted at
+placement. Unpaid orders placed on 1.x are deducted once when paid; orders placed on 2.0.0 are not deducted again.
+- Returns of partially refunded orders can now be refunded as store credit.
+- The checkout store credit section is collapsed unless *Expand store credit section by default* is enabled.
+- Storefront snippet files renamed to `store-credit.*.json`.
+- Checkout CSS classes renamed to `store-credit-checkout*`. Themes that style the previous classes must be updated.
+
 
   ## [2.0.0] - 2026-09-30
 
