@@ -1,7 +1,7 @@
 <template>
     <sw-page class="store-credits-index">
         <template #smart-bar-header>
-            <sw-page-title>Store Credits</sw-page-title>
+            <sw-page-title>{{ $tc('store-credits.module.title') }}</sw-page-title>
 
             <sw-button
                     size="small"
@@ -9,7 +9,7 @@
                     @click="openAddCustomerModal"
                     class="sw-page__header-add-credit-button"
             >
-                Add Customer Credit
+                {{ $tc('store-credits.listing.addCustomerCredit') }}
             </sw-button>
         </template>
 
@@ -56,19 +56,21 @@
                 <template #column-actions="{ item }">
                     <sw-button
                             size="small"
-                            variant="success"
+                            variant="primary"
+                            class="store-credits-index__action-button store-credits-index__action-button--add"
                             @click="openAddBalanceModal(item)"
                     >
-                        <sw-icon name="regular-plus-circle" size="16px"></sw-icon>
-                        Add Balance
+                        <sw-icon name="regular-plus-circle" small />
+                        {{ $tc('store-credits.listing.addBalance') }}
                     </sw-button>
                     <sw-button
                             size="small"
                             variant="danger"
+                            class="store-credits-index__action-button store-credits-index__action-button--deduct"
                             @click="openDeductBalanceModal(item)"
                     >
-                        <sw-icon name="regular-minus-circle" size="16px"></sw-icon>
-                        Deduct Balance
+                        <sw-icon name="regular-minus-circle" small />
+                        {{ $tc('store-credits.listing.deductBalance') }}
                     </sw-button>
                 </template>
 
@@ -76,14 +78,14 @@
                     <sw-context-menu-item
                             @click="navigateToCustomerHistory(item.storeCreditId, item.customerFullName, item.balance)"
                     >
-                        View History
+                        {{ $tc('store-credits.listing.viewHistory') }}
                     </sw-context-menu-item>
                     <sw-context-menu-item
                             @click="openDeleteModal(item)"
                             icon="regular-trash"
                             variant="danger"
                     >
-                        Delete
+                        {{ $tc('store-credits.common.delete') }}
                     </sw-context-menu-item>
                 </template>
 
@@ -93,6 +95,7 @@
                             :total="total"
                             :limit="limit"
                             :page="page"
+                            :steps="[10, 25, 50]"
                             :total-visible="7"
                             @page-change="onPageChange"
                             @limit-change="onLimitChange"
@@ -103,36 +106,39 @@
             <!-- Add Balance Modal -->
             <sw-modal
                     v-if="addBalanceModalVisible"
-                    title="Add Balance"
+                    :title="$tc('store-credits.listing.addBalanceModalTitle')"
+                    :isLoading="isSubmitting"
                     @modal-close="addBalanceModalVisible = false"
             >
                 <template #modal-header>
                     <h3 class="sw-modal__title">
                         <sw-icon name="regular-plus-circle" size="24px"></sw-icon>
-                        Add Balance
+                        {{ $tc('store-credits.listing.addBalanceModalTitle') }}
                     </h3>
                 </template>
                 <sw-number-field
                         v-model:value="amount"
-                        label="Amount"
+                        :label="$tc('store-credits.listing.amountLabel')"
                         :min="0.00"
                         :step="0.01"
                         :number-type="'float'"
-                        placeholder="0.00"
+                        :placeholder="$tc('store-credits.listing.amountPlaceholder')"
+                        :disabled="isSubmitting"
                         required
                 />
                 <sw-text-field 
                         v-model:value="reason" 
-                        label="Reason" 
-                        placeholder="Enter reason for adding balance"
+                        :label="$tc('store-credits.listing.reasonLabel')" 
+                        :placeholder="$tc('store-credits.listing.reasonAddPlaceholder')"
+                        :disabled="isSubmitting"
                 />
                 <template #modal-footer>
-                    <sw-button @click="addBalanceModalVisible = false" size="small">
-                        Cancel
+                    <sw-button @click="addBalanceModalVisible = false" size="small" :disabled="isSubmitting">
+                        {{ $tc('store-credits.common.cancel') }}
                     </sw-button>
-                    <sw-button @click="addBalance" size="small" variant="primary">
-                        <sw-icon name="regular-check" size="16px"></sw-icon>
-                        Add Balance
+                    <sw-button @click="addBalance" size="small" variant="primary" :disabled="isSubmitting" :isLoading="isSubmitting">
+                        <sw-icon name="regular-plus-circle" small />
+                        {{ $tc('store-credits.listing.addBalance') }}
                     </sw-button>
                 </template>
             </sw-modal>
@@ -140,36 +146,51 @@
             <!-- Deduct Balance Modal -->
             <sw-modal
                     v-if="deductBalanceModalVisible"
-                    title="Deduct Balance"
+                    :title="$tc('store-credits.listing.deductBalanceModalTitle')"
+                    :isLoading="isSubmitting"
                     @modal-close="deductBalanceModalVisible = false"
             >
                 <template #modal-header>
                     <h3 class="sw-modal__title">
                         <sw-icon name="regular-minus-circle" size="24px"></sw-icon>
-                        Deduct Balance
+                        {{ $tc('store-credits.listing.deductBalanceModalTitle') }}
                     </h3>
                 </template>
                 <sw-number-field
                         v-model:value="amount"
-                        label="Amount"
+                        :label="$tc('store-credits.listing.amountLabel')"
                         :min="0.00"
                         :step="0.01"
                         :number-type="'float'"
-                        placeholder="0.00"
+                        :placeholder="$tc('store-credits.listing.amountPlaceholder')"
+                        :disabled="isSubmitting"
                         required
                 />
                 <sw-text-field 
                         v-model:value="reason" 
-                        label="Reason" 
-                        placeholder="Enter reason for deducting balance"
+                        :label="$tc('store-credits.listing.reasonLabel')" 
+                        :placeholder="$tc('store-credits.listing.reasonDeductPlaceholder')"
+                        :disabled="isSubmitting"
+                />
+                <sw-alert
+                        v-if="reservedConfirmRequired"
+                        variant="warning"
+                >
+                    {{ reservedNotice }}
+                </sw-alert>
+                <sw-checkbox-field
+                        v-if="reservedConfirmRequired"
+                        v-model:value="allowReserved"
+                        :label="$tc('store-credits.customer.reservedConfirmCheckbox')"
+                        :disabled="isSubmitting"
                 />
                 <template #modal-footer>
-                    <sw-button @click="deductBalanceModalVisible = false" size="small">
-                        Cancel
+                    <sw-button @click="deductBalanceModalVisible = false" size="small" :disabled="isSubmitting">
+                        {{ $tc('store-credits.common.cancel') }}
                     </sw-button>
-                    <sw-button @click="deductBalance" size="small" variant="danger">
-                        <sw-icon name="regular-check" size="16px"></sw-icon>
-                        Deduct Balance
+                    <sw-button @click="deductBalance" size="small" variant="danger" :disabled="isSubmitting || (reservedConfirmRequired && !allowReserved)" :isLoading="isSubmitting">
+                        <sw-icon name="regular-minus-circle" small />
+                        {{ $tc('store-credits.listing.deductBalance') }}
                     </sw-button>
                 </template>
             </sw-modal>
@@ -177,34 +198,33 @@
             <!-- Delete Confirmation Modal -->
             <sw-modal
                     v-if="confirmDeleteModalVisible"
-                    title="Confirm Delete"
+                    :title="$tc('store-credits.listing.confirmDelete')"
                     variant="small"
                     @modal-close="confirmDeleteModalVisible = false"
             >
                 <template #modal-header>
                     <h3 class="sw-modal__title">
                         <sw-icon name="regular-exclamation-triangle" size="24px" color="#de294c"></sw-icon>
-                        Confirm Delete
+                        {{ $tc('store-credits.listing.confirmDelete') }}
                     </h3>
                 </template>
                 <p class="sw-modal__body-text">
-                    Are you sure you want to delete this customer's store credit and all the history? 
-                    This action cannot be undone.
+                    {{ $tc('store-credits.listing.confirmDeleteText') }}
                 </p>
                 <template #modal-footer>
                     <sw-button
                             @click="confirmDeleteModalVisible = false"
                             size="small"
                     >
-                        Cancel
+                        {{ $tc('store-credits.common.cancel') }}
                     </sw-button>
                     <sw-button
                             @click="deleteStoreCredit"
                             size="small"
                             variant="danger"
                     >
-                        <sw-icon name="regular-trash" size="16px"></sw-icon>
-                        Delete
+                        <sw-icon name="regular-trash" small />
+                        {{ $tc('store-credits.common.delete') }}
                     </sw-button>
                 </template>
             </sw-modal>
@@ -212,26 +232,27 @@
             <!-- Add Customer Credit Modal -->
             <sw-modal
                     v-if="addCustomerModalVisible"
-                    title="Add Customer Store Credit"
+                    :title="$tc('store-credits.listing.addCustomerModalTitle')"
                     @modal-close="addCustomerModalVisible = false"
                     size="large"
             >
                 <sw-customer-grid v-model:value="selectedNewCustomer"/>
-                <sw-card title="Amount">
+                <sw-card :title="$tc('store-credits.listing.amountCardTitle')">
                     <sw-number-field
                             v-model:value="newCustomerAmount"
                             :min="0.00"
                             :step="0.00"
                             :number-type="'float'"
-                            placeholder="Enter amount"
+                            :placeholder="$tc('store-credits.listing.amountPlaceholder')"
+                            :disabled="isSubmitting"
                     />
                 </sw-card>
                 <template #modal-footer>
-                    <sw-button @click="addCustomerCredit" size="small" variant="primary">
-                        Submit
+                    <sw-button @click="addCustomerCredit" size="small" variant="primary" :disabled="isSubmitting" :isLoading="isSubmitting">
+                        {{ $tc('store-credits.common.submit') }}
                     </sw-button>
-                    <sw-button @click="addCustomerModalVisible = false" size="small" variant="danger">
-                        Cancel
+                    <sw-button @click="addCustomerModalVisible = false" size="small" variant="danger" :disabled="isSubmitting">
+                        {{ $tc('store-credits.common.cancel') }}
                     </sw-button>
                 </template>
             </sw-modal>

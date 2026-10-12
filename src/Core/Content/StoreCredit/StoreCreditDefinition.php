@@ -10,6 +10,8 @@ use Shopware\Core\Framework\DataAbstractionLayer\Field\DateTimeField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\FkField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\PrimaryKey;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\Required;
+use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\WriteProtected;
+use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\FloatField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\IdField;
 use Shopware\Core\Framework\DataAbstractionLayer\FieldCollection;
@@ -37,7 +39,7 @@ class StoreCreditDefinition extends EntityDefinition
             (new IdField('id', 'id'))->addFlags(new PrimaryKey(), new Required()),
             (new FkField('customer_id', 'customerId', CustomerDefinition::class, 'id'))->addFlags(new Required()),
             new FkField('currency_id', 'currencyId', CurrencyDefinition::class, 'id'),
-            (new FloatField('balance', 'balance'))->addFlags(new Required()),
+            (new FloatField('balance', 'balance'))->addFlags(new Required(), new WriteProtected(Context::SYSTEM_SCOPE)),
             (new DateTimeField('updated_at', 'updatedAt')),
             (new DateTimeField('created_at', 'createdAt'))->addFlags(new Required()),
 

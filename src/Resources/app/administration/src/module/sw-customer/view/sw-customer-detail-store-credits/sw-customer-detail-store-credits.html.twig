@@ -26,6 +26,33 @@
         </div>
         {% endblock %}
 
+        {% block sw_customer_detail_store_credits_reservations %}
+        <dl
+            v-if="reserved > 0 || expiredOrders.length > 0"
+            class="sw-customer-detail-store-credits__reservations"
+        >
+            <dt>{{ $tc('store-credits.customer.reserved') }}</dt>
+            <dd>
+                {{ formatCurrency(reserved) }}
+                <small
+                    v-if="reservedOrderNumbers"
+                    class="sw-customer-detail-store-credits__reservation-orders"
+                >
+                    {{ $tc('store-credits.customer.reservedOn', 0, { orders: reservedOrderNumbers }) }}
+                </small>
+                <small
+                    v-if="expiredOrderNumbers"
+                    class="sw-customer-detail-store-credits__reservation-orders"
+                >
+                    {{ $tc('store-credits.customer.expiredOn', 0, { orders: expiredOrderNumbers }) }}
+                </small>
+            </dd>
+
+            <dt>{{ $tc('store-credits.customer.available') }}</dt>
+            <dd>{{ formatCurrency(available) }}</dd>
+        </dl>
+        {% endblock %}
+
         {% block sw_customer_detail_store_credits_actions %}
         <div class="sw-customer-detail-store-credits__actions">
             <sw-button
@@ -33,7 +60,7 @@
                 :disabled="isLoading"
                 @click="openAddModal"
             >
-                <sw-icon name="regular-plus-circle" size="16px" />
+                <sw-icon name="regular-plus-circle" small />
                 {{ $tc('store-credits.customer.addCredit') }}
             </sw-button>
 
@@ -42,7 +69,7 @@
                 :disabled="isLoading || balance <= 0"
                 @click="openDeductModal"
             >
-                <sw-icon name="regular-minus-circle" size="16px" />
+                <sw-icon name="regular-minus-circle" small />
                 {{ $tc('store-credits.customer.deductCredit') }}
             </sw-button>
         </div>
@@ -124,6 +151,19 @@
                 :label="$tc('store-credits.customer.reason')"
                 :placeholder="$tc('store-credits.customer.reasonPlaceholder')"
             />
+
+            <sw-alert
+                v-if="reservedConfirmRequired"
+                variant="warning"
+            >
+                {{ reservedNotice }}
+            </sw-alert>
+
+            <sw-checkbox-field
+                v-if="reservedConfirmRequired"
+                v-model:value="allowReserved"
+                :label="$tc('store-credits.customer.reservedConfirmCheckbox')"
+            />
         </sw-container>
         {% endblock %}
 
@@ -137,7 +177,7 @@
 
             <sw-button
                 variant="danger"
-                :disabled="isLoading || !deductAmount || deductAmount <= 0 || deductAmount > balance"
+                :disabled="isLoading || !deductAmount || deductAmount <= 0 || deductAmount > balance || (reservedConfirmRequired && !allowReserved)"
                 @click="deductCredit"
             >
                 {{ $tc('store-credits.customer.deductCredit') }}

@@ -7,10 +7,10 @@
                         variant="ghost"
                         @click="goBack"
                 >
-                    Back
+                    {{ $tc('store-credits.common.back') }}
                 </sw-button>
 
-                <sw-page-title>Store Credit History</sw-page-title>
+                <sw-page-title>{{ $tc('store-credits.module.historyTitle') }}</sw-page-title>
             </div>
         </template>
 
@@ -24,7 +24,7 @@
                                 @click="goBack"
                         >
                             <sw-icon name="regular-arrow-left" size="16px"></sw-icon>
-                            Back to Store Credits
+                            {{ $tc('store-credits.history.backToStoreCredits') }}
                         </sw-button>
                     </div>
                 </template>
@@ -43,7 +43,7 @@
                                 <h2 v-else class="customer-name">{{ customerName }}</h2>
                                 <p class="customer-balance">
                                     <sw-icon name="regular-wallet" size="16px"></sw-icon>
-                                    Current Balance: <strong>{{ formatCurrency(customerBalance, currencyIsoCode) }}</strong>
+                                    {{ $tc('store-credits.history.currentBalance') }}: <strong>{{ formatCurrency(customerBalance, currencyIsoCode) }}</strong>
                                 </p>
                             </div>
                         </div>
@@ -55,17 +55,17 @@
                 <template #header>
                     <h3 class="history-title">
                         <sw-icon name="regular-clock" size="20px"></sw-icon>
-                        Transaction History
+                        {{ $tc('store-credits.history.transactionHistory') }}
                     </h3>
                 </template>
 
                 <sw-data-grid
                         :dataSource="history"
                         :columns="[
-                        { property: 'createdAt', label: 'Date & Time', align: 'left', width: '200px' },
-                        { property: 'amount', label: 'Amount', align: 'right', width: '150px' },
-                        { property: 'reason', label: 'Reason', align: 'left' },
-                        { property: 'actionType', label: 'Type', align: 'center', width: '120px' }
+                        { property: 'createdAt', label: $tc('store-credits.history.dateTime'), align: 'left', width: '200px' },
+                        { property: 'amount', label: $tc('store-credits.history.amount'), align: 'right', width: '150px' },
+                        { property: 'reason', label: $tc('store-credits.history.reason'), align: 'left' },
+                        { property: 'actionType', label: $tc('store-credits.history.type'), align: 'center', width: '120px' }
                     ]"
                         :isLoading="isLoading"
                         :showActions="false"
@@ -104,7 +104,7 @@
                                     :name="item.actionType === 'add' ? 'regular-check-circle' : 'regular-times-circle'" 
                                     size="12px"
                             ></sw-icon>
-                            {{ item.actionType === 'add' ? 'Added' : 'Deducted' }}
+                            {{ item.actionType === 'add' ? $tc('store-credits.history.added') : $tc('store-credits.history.deducted') }}
                         </sw-label>
                     </template>
 

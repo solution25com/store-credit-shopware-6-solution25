@@ -32,6 +32,12 @@ class OrderStateInstaller
         ],
     ];
 
+    /**
+     * @param EntityRepository<\Shopware\Core\System\StateMachine\StateMachineCollection> $stateMachineRepository
+     * @param EntityRepository<\Shopware\Core\System\StateMachine\Aggregation\StateMachineState\StateMachineStateCollection> $stateMachineStateRepository
+     * @param EntityRepository<\Shopware\Core\System\StateMachine\Aggregation\StateMachineTransition\StateMachineTransitionCollection> $stateMachineTransitionRepository
+     * @param EntityRepository<\Shopware\Core\System\StateMachine\Aggregation\StateMachineHistory\StateMachineHistoryCollection> $stateMachineHistoryRepository
+     */
     public function __construct(
         private readonly EntityRepository $stateMachineRepository,
         private readonly EntityRepository $stateMachineStateRepository,
@@ -80,6 +86,9 @@ class OrderStateInstaller
             $this->removeState($context, $stateMachineId);
         }
     }
+    /**
+     * @param EntityRepository<\Shopware\Core\System\StateMachine\StateMachineCollection> $stateMachineRepository
+     */
     private function getStateMachineId(
         EntityRepository $stateMachineRepository,
         Context $context
@@ -132,6 +141,9 @@ class OrderStateInstaller
         }
         return $state->getId();
     }
+    /**
+     * @return array<int, array{actionName: string, fromStateId: string, toStateId: string, stateMachineId: string}>
+     */
     private function buildTransitions(
         string $stateMachineId,
         Context $context
@@ -191,15 +203,20 @@ class OrderStateInstaller
         $deleteData = array_map(fn($id) => ['id' => $id], $stateIds);
         $this->stateMachineStateRepository->delete($deleteData, $context);
     }
+    /**
+     * @param array<int, string> $stateIds
+     */
     private function removeStateMachineHistoryReferences(
         array $stateIds,
         Context $context
     ): void {
+        $normalizedStateIds = array_values($stateIds);
+
         $criteria = new Criteria();
         $criteria->addFilter(
             new OrFilter([
-                new EqualsAnyFilter('fromStateId', $stateIds),
-                new EqualsAnyFilter('toStateId', $stateIds),
+                new EqualsAnyFilter('fromStateId', $normalizedStateIds),
+                new EqualsAnyFilter('toStateId', $normalizedStateIds),
             ])
         );
 
@@ -220,6 +237,10 @@ class OrderStateInstaller
         return $state !== null;
     }
 
+    /**
+     * @param array<int, array{actionName: string, fromStateId: string, toStateId: string, stateMachineId: string}> $transitions
+     * @return array<int, string>
+     */
     private function getExistingTransitions(array $transitions, Context $context): array
     {
         $criteria = new Criteria();

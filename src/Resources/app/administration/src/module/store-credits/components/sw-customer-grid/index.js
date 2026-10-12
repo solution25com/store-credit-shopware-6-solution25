@@ -25,9 +25,9 @@ Component.register('sw-customer-grid', {
             limit: 10,
 
             columns: [
-                {property: 'label', label: 'Name', allowResize: true},
-                {property: 'customerNumber', label: 'Customer Number', allowResize: true},
-                {property: 'email', label: 'Email', allowResize: true}
+                {property: 'label', label: this.$tc('store-credits.customerGrid.name'), allowResize: true},
+                {property: 'customerNumber', label: this.$tc('store-credits.customerGrid.customerNumber'), allowResize: true},
+                {property: 'email', label: this.$tc('store-credits.customerGrid.email'), allowResize: true}
             ]
         };
     },

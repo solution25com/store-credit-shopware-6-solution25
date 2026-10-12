@@ -5,6 +5,18 @@
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
     <services>
+        <service id="Solu1StoreCredit\Logger\StoreCreditLogHandler" class="Monolog\Handler\RotatingFileHandler">
+            <argument>%kernel.logs_dir%/StoreCredit.log</argument>
+            <argument>14</argument>
+        </service>
+
+        <service id="Solu1StoreCredit\Logger\StoreCreditLogger" class="Monolog\Logger">
+            <argument>StoreCredit</argument>
+            <call method="pushHandler">
+                <argument type="service" id="Solu1StoreCredit\Logger\StoreCreditLogHandler"/>
+            </call>
+        </service>
+
         <service id="Solu1StoreCredit\Core\Content\StoreCredit\StoreCreditDefinition" public="true">
             <tag name="shopware.entity.definition" entity="solu1_store_credit" />
         </service>
@@ -17,6 +29,13 @@
             <argument type="service" id="solu1_store_credit.repository"/>
             <argument type="service" id="solu1_store_credit_history.repository"/>
             <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <argument type="tagged_iterator" tag="solu1_store_credit.card_refunded_provider"/>
+            <argument type="service" id="Solu1StoreCredit\Service\StoreCreditCurrencyConverter"/>
+        </service>
+
+        <service id="Solu1StoreCredit\Service\StoreCreditCurrencyConverter">
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
         </service>
 
         <service id="Solu1StoreCredit\Service\OrderStateInstaller">
@@ -28,13 +47,17 @@
 
         <service id="Solu1StoreCredit\Controller\StoreCreditController">
             <argument type="service" id="Solu1StoreCredit\Service\StoreCreditManager" />
-            <argument type="service" id="logger"/>
+            <argument type="service" id="Solu1StoreCredit\Logger\StoreCreditLogger"/>
+            <argument type="service" id="translator"/>
             <tag name="controller.service_arguments"/>
         </service>
 
         <service id="Solu1StoreCredit\Controller\StoreCreditPageController">
             <argument type="service" id="solu1_store_credit.repository"/>
             <argument type="service" id="solu1_store_credit_history.repository"/>
+            <argument type="service" id="Shopware\Storefront\Page\GenericPageLoader"/>
+            <argument type="service" id="Solu1StoreCredit\Service\StoreCreditManager"/>
+            <argument type="service" id="Solu1StoreCredit\Service\StoreCreditCurrencyConverter"/>
             <tag name="controller.service_arguments"/>
             <call method="setContainer">
                 <argument type="service" id="service_container"/>
@@ -45,23 +68,35 @@
         </service>
 
         <service id="Solu1StoreCredit\Subscriber\CartSubscriber">
-                <argument type="service" id="Solu1StoreCredit\Service\StoreCreditManager"/>
-                <argument type="service" id="logger"/>
-                <tag name="kernel.event_subscriber"/>
+            <argument type="service" id="order.repository"/>
+            <argument type="service" id="Solu1StoreCredit\Logger\StoreCreditLogger"/>
+            <argument type="service" id="Solu1StoreCredit\Service\StoreCreditManager"/>
+            <argument type="service" id="Solu1StoreCredit\Service\StoreCreditCurrencyConverter"/>
+            <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="Solu1StoreCredit\Subscriber\StoreCreditTransactionPaidSubscriber">
+            <argument type="service" id="Solu1StoreCredit\Service\StoreCreditManager"/>
+            <argument type="service" id="order.repository"/>
+            <argument type="service" id="Solu1StoreCredit\Logger\StoreCreditLogger"/>
+            <argument type="service" id="tag.repository"/>
+            <argument type="service" id="order_tag.repository"/>
+            <tag name="kernel.event_subscriber"/>
         </service>
 
         <service id="Solu1StoreCredit\Subscriber\OrderRefundSubscriber" public="true">
-            <argument type="service" id="order.repository" />
             <argument type="service" id="order_return.repository" on-invalid="null"/>
             <argument type="service" id="Solu1StoreCredit\Service\StoreCreditManager" />
-            <argument type="service" id="logger"/>
+            <argument type="service" id="Solu1StoreCredit\Logger\StoreCreditLogger"/>
             <tag name="kernel.event_subscriber" />
         </service>
 
         <service id="Solu1StoreCredit\Storefront\Controller\StoreCreditApplyController">
             <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
-            <argument type="service" id="solu1_store_credit.repository"/>
+            <argument type="service" id="Solu1StoreCredit\Service\StoreCreditManager"/>
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <argument type="service" id="Solu1StoreCredit\Service\StoreCreditCurrencyConverter"/>
+            <argument type="service" id="Shopware\Core\System\Currency\CurrencyFormatter"/>
             <call method="setContainer">
                 <argument type="service" id="service_container"/>
             </call>
@@ -71,6 +106,8 @@
         <service id="Solu1StoreCredit\EventSubscriber\StoreCreditCheckoutSubscriber">
             <argument type="service" id="Solu1StoreCredit\Service\StoreCreditManager"/>
             <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <argument type="service" id="Solu1StoreCredit\Service\StoreCreditCurrencyConverter"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 
@@ -81,15 +118,20 @@
 
         <service id="Solu1StoreCredit\Subscriber\ConfigCommandSubscriber">
             <argument type="service" id="console.command_loader"/>
-            <argument type="service" id="logger"/>
+            <argument type="service" id="Solu1StoreCredit\Logger\StoreCreditLogger"/>
             <tag name="kernel.event_subscriber"/>
         </service>
 
         <service id="Solu1StoreCredit\Core\Checkout\Cart\Processor\ValidateStoreCreditCartProcessor">
             <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <argument type="service" id="request_stack"/>
+            <argument type="service" id="Solu1StoreCredit\Service\StoreCreditManager"/>
+            <argument type="service" id="Solu1StoreCredit\Logger\StoreCreditLogger"/>
+            <argument type="service" id="translator"/>
+            <argument type="service" id="Shopware\Core\System\Currency\CurrencyFormatter"/>
+            <argument type="service" id="Solu1StoreCredit\Service\StoreCreditCurrencyConverter"/>
             <tag name="shopware.cart.processor" priority="-20000"/>
         </service>
 
-        
     </services>
 </container>

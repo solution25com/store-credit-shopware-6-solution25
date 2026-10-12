@@ -25,14 +25,18 @@
 
     .sw-button {
         margin: 0 4px;
-        
-        &.sw-button--success {
-            background-color: #37d046;
-            border-color: #37d046;
-            
-            &:hover {
-                background-color: #2eb83a;
-            }
+    }
+
+    .store-credits-index__action-button--add {
+        background-color: #37d046;
+        border-color: #37d046;
+
+        .sw-icon {
+            color: #fff;
+        }
+
+        &:hover {
+            background-color: #2eb83a;
         }
     }
 

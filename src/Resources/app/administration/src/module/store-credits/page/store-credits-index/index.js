@@ -31,14 +31,18 @@ Component.register('store-credits-index', {
             selectedNewCustomer: null,
             selectedStoreCredit: null,
             newCustomerAmount: 0,
+            isSubmitting: false,
+            reservedConfirmRequired: false,
+            allowReserved: false,
+            reservedNotice: '',
             total: 0,
             term: '',
             columns: [
-                { property: 'customerFullName', label: 'Customer Full Name', allowResize: true, sortable: true },
-                { property: 'balance', label: 'Balance', allowResize: true },
+                { property: 'customerFullName', label: this.$tc('store-credits.listing.customerFullName'), allowResize: true, sortable: true },
+                { property: 'balance', label: this.$tc('store-credits.listing.balance'), allowResize: true },
                 {
                     property: 'actions',
-                    label: 'Balance Actions',
+                    label: this.$tc('store-credits.listing.balanceActions'),
                     allowResize: false,
                     align: 'center',
                     sortable: false,
@@ -66,6 +70,10 @@ Component.register('store-credits-index', {
     },
 
     watch: {
+        amount() {
+            this.resetReservedConfirmation();
+        },
+
         '$route.query.page'() {
             if (this.$route.query.page) {
                 this.page = parseInt(this.$route.query.page, 10);
@@ -78,7 +86,7 @@ Component.register('store-credits-index', {
                 this.fetchStoreCredits();
             }
         },
-        '$route.query.term'(newTerm, oldTerm) {
+        '$route.query.term'(newTerm) {
             const term = newTerm ? String(newTerm) : '';
             if (term === this.term) {
                 return;
@@ -118,7 +126,7 @@ Component.register('store-credits-index', {
                         const customer = credit.customer;
                         const firstName = customer?.firstName || '';
                         const lastName = customer?.lastName || '';
-                        const customerFullName = (firstName + ' ' + lastName).trim() || 'N/A';
+                        const customerFullName = (firstName + ' ' + lastName).trim() || this.$tc('store-credits.common.unknown');
                         
                         return {
                             id: credit.id,
@@ -135,8 +143,8 @@ Component.register('store-credits-index', {
                 .catch((error) => {
                     console.error('Error fetching store credits:', error);
                     this.createNotificationError({
-                        title: 'Error',
-                        message: error.response?.data?.errors?.[0]?.detail || 'Failed to load store credits. Please refresh the page.',
+                        title: this.$tc('store-credits.common.error'),
+                        message: error.response?.data?.errors?.[0]?.detail || this.$tc('store-credits.listing.loadFailed'),
                     });
                 })
                 .finally(() => {
@@ -217,7 +225,14 @@ Component.register('store-credits-index', {
             this.selectedCustomer = customer;
             this.amount = 0;
             this.reason = '';
+            this.resetReservedConfirmation();
             this.deductBalanceModalVisible = true;
+        },
+
+        resetReservedConfirmation() {
+            this.reservedConfirmRequired = false;
+            this.allowReserved = false;
+            this.reservedNotice = '';
         },
 
         openAddCustomerModal() {
@@ -228,10 +243,14 @@ Component.register('store-credits-index', {
         },
 
         addBalance() {
+            if (this.isSubmitting) return;
+
             const amount = parseFloat(this.amount);
             if (isNaN(amount) || amount <= 0) {
-                return this.createNotificationError({ title: 'Error', message: 'Amount must be greater than zero.' });
+                return this.createNotificationError({ title: this.$tc('store-credits.common.error'), message: this.$tc('store-credits.listing.amountMustBePositive') });
             }
+
+            this.isSubmitting = true;
 
             fetch('/api/store-credit/add', {
                 method: 'POST',
@@ -243,27 +262,34 @@ Component.register('store-credits-index', {
                 body: JSON.stringify({
                     customerId: this.selectedCustomer.customerId,
                     amount,
-                    reason: this.reason || 'Admin update',
+                    reason: this.reason || this.$tc('store-credits.common.adminUpdate'),
                 }),
             })
                 .then(async response => {
                     const data = await response.json();
-                    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to add balance.');
-                    this.createNotificationSuccess({ title: 'Success', message: 'Balance added successfully!' });
+                    if (!response.ok || !data.success) throw new Error(data.message || this.$tc('store-credits.listing.addBalanceFailed'));
+                    this.createNotificationSuccess({ title: this.$tc('store-credits.common.success'), message: this.$tc('store-credits.listing.addedSuccess') });
                     this.addBalanceModalVisible = false;
                     this.fetchStoreCredits();
                 })
                 .catch(error => {
                     console.error('Error adding balance:', error);
-                    this.createNotificationError({ title: 'Error', message: error.message });
+                    this.createNotificationError({ title: this.$tc('store-credits.common.error'), message: error.message });
+                })
+                .finally(() => {
+                    this.isSubmitting = false;
                 });
         },
 
         deductBalance() {
+            if (this.isSubmitting) return;
+
             const amount = parseFloat(this.amount);
             if (isNaN(amount) || amount <= 0) {
-                return this.createNotificationError({ title: 'Error', message: 'Amount must be greater than zero.' });
+                return this.createNotificationError({ title: this.$tc('store-credits.common.error'), message: this.$tc('store-credits.listing.amountMustBePositive') });
             }
+
+            this.isSubmitting = true;
 
             fetch('/api/store-credit/deduct', {
                 method: 'POST',
@@ -275,30 +301,49 @@ Component.register('store-credits-index', {
                 body: JSON.stringify({
                     customerId: this.selectedCustomer.customerId,
                     amount,
-                    reason: this.reason || 'Admin update',
+                    reason: this.reason || this.$tc('store-credits.common.adminUpdate'),
+                    allowReserved: this.allowReserved,
                 }),
             })
                 .then(async response => {
                     const data = await response.json();
-                    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to deduct balance.');
-                    this.createNotificationSuccess({ title: 'Success', message: 'Balance deducted successfully!' });
+
+                    if (data.requiresReservedConfirmation) {
+                        this.reservedConfirmRequired = true;
+                        this.allowReserved = false;
+                        this.reservedNotice = this.$tc('store-credits.customer.reservedConfirmMessage', 0, {
+                            available: data.available.toFixed(2),
+                            reserved: data.reserved.toFixed(2),
+                        });
+                        return;
+                    }
+
+                    if (!response.ok || !data.success) throw new Error(data.message || this.$tc('store-credits.listing.deductBalanceFailed'));
+                    this.createNotificationSuccess({ title: this.$tc('store-credits.common.success'), message: this.$tc('store-credits.listing.deductedSuccess') });
                     this.deductBalanceModalVisible = false;
                     this.fetchStoreCredits();
                 })
                 .catch(error => {
                     console.error('Error deducting balance:', error);
-                    this.createNotificationError({ title: 'Error', message: error.message });
+                    this.createNotificationError({ title: this.$tc('store-credits.common.error'), message: error.message });
+                })
+                .finally(() => {
+                    this.isSubmitting = false;
                 });
         },
 
         addCustomerCredit() {
+            if (this.isSubmitting) return;
+
             const amount = parseFloat(this.newCustomerAmount);
             if (!this.selectedNewCustomer) {
-                return this.createNotificationError({ title: 'Error', message: 'Please select a customer.' });
+                return this.createNotificationError({ title: this.$tc('store-credits.common.error'), message: this.$tc('store-credits.listing.selectCustomer') });
             }
             if (isNaN(amount) || amount <= 0) {
-                return this.createNotificationError({ title: 'Error', message: 'Amount must be greater than zero.' });
+                return this.createNotificationError({ title: this.$tc('store-credits.common.error'), message: this.$tc('store-credits.listing.amountMustBePositive') });
             }
+
+            this.isSubmitting = true;
 
             fetch('/api/store-credit/add', {
                 method: 'POST',
@@ -310,24 +355,27 @@ Component.register('store-credits-index', {
                 body: JSON.stringify({
                     customerId: this.selectedNewCustomer,
                     amount,
-                    reason: 'Admin added store credit',
+                    reason: this.$tc('store-credits.common.adminAdded'),
                 }),
             })
                 .then(async response => {
                     const data = await response.json();
-                    if (!response.ok || !data.success) throw new Error(data.message || 'Failed to add store credit.');
-                    this.createNotificationSuccess({ title: 'Success', message: 'Store credit added successfully!' });
+                    if (!response.ok || !data.success) throw new Error(data.message || this.$tc('store-credits.listing.addStoreCreditFailed'));
+                    this.createNotificationSuccess({ title: this.$tc('store-credits.common.success'), message: this.$tc('store-credits.listing.creditAddedSuccess') });
                     this.addCustomerModalVisible = false;
                     this.fetchStoreCredits();
                 })
                 .catch(error => {
                     console.error('Error adding store credit:', error);
-                    this.createNotificationError({ title: 'Error', message: error.message });
+                    this.createNotificationError({ title: this.$tc('store-credits.common.error'), message: error.message });
+                })
+                .finally(() => {
+                    this.isSubmitting = false;
                 });
         },
 
         navigateToCustomerHistory(storeCreditId, customerName, balance, customerId) {
-            if (!storeCreditId) return this.createNotificationError({ title: 'Error', message: 'Invalid store credit ID.' });
+            if (!storeCreditId) return this.createNotificationError({ title: this.$tc('store-credits.common.error'), message: this.$tc('store-credits.listing.invalidStoreCreditId') });
 
             this.$router.push({
                 name: 'store.credits.history',
@@ -343,18 +391,18 @@ Component.register('store-credits-index', {
 
         deleteStoreCredit() {
             if (!this.selectedStoreCredit || !this.selectedStoreCredit.id) {
-                return this.createNotificationError({ title: 'Error', message: 'Invalid store credit selection.' });
+                return this.createNotificationError({ title: this.$tc('store-credits.common.error'), message: this.$tc('store-credits.listing.invalidSelection') });
             }
 
             this.repository.delete(this.selectedStoreCredit.id, Shopware.Context.api)
                 .then(() => {
-                    this.createNotificationSuccess({ title: 'Success', message: 'Store credit deleted successfully!' });
+                    this.createNotificationSuccess({ title: this.$tc('store-credits.common.success'), message: this.$tc('store-credits.listing.deletedSuccess') });
                     this.confirmDeleteModalVisible = false;
                     this.fetchStoreCredits();
                 })
                 .catch((error) => {
                     console.error('Error deleting store credit:', error);
-                    this.createNotificationError({ title: 'Error', message: 'Failed to delete store credit.' });
+                    this.createNotificationError({ title: this.$tc('store-credits.common.error'), message: this.$tc('store-credits.listing.deleteStoreCreditFailed') });
                     this.confirmDeleteModalVisible = false;
                 });
         },

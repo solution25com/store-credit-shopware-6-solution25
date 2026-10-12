@@ -1,4 +1,4 @@
-.cds-store-credit-wrapper {
+.store-credit-checkout-wrapper {
   border: 1px solid #e5e5e5;
   border-radius: 6px;
   padding: 12px;
@@ -6,11 +6,10 @@
   background-color: #fff;
 }
 
-.cds-checkout-store-credit {
+.store-credit-checkout {
   margin: 0;
 
-  .cds-btn-store-credit {
-
+  .store-credit-checkout-toggle {
     &:hover {
       text-decoration: none;
     }
@@ -20,17 +19,17 @@
       position: relative;
       fill: currentColor;
     }
-
-    p {
-      color: #000;
-      font-size: 14px;
-      font-style: normal;
-      font-weight: 600;
-      line-height: 20px;
-    }
   }
 
-  .cds-store-credit-card-body {
+  .store-credit-checkout-toggle-label {
+    color: #000;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 20px;
+  }
+
+  .store-credit-checkout-card-body {
     .store-credit-balance {
       font-size: 12px;
       font-style: normal;
@@ -38,24 +37,26 @@
       line-height: 15px;
       padding-bottom: 6px;
     }
+  }
 
-    #store-credit-form {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
+  .store-credit-checkout-form {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
 
-      .form-group {
-        flex: 1 1 auto;
+  .store-credit-checkout-form-group {
+    flex: 1 1 auto;
+  }
 
-        .form-control {
-          border-top-left-radius: 4px;
-          border-bottom-left-radius: 4px;
-        }
+  .store-credit-checkout-form-control {
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+  }
 
-        #exceedCreditMessage {
-          padding-top: 4px;
-        }
-      }
-    }
+  .store-credit-exceed-message {
+    padding-top: 4px;
+    display: none;
+    color: #dc3545;
   }
 }

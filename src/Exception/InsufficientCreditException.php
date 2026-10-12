@@ -17,4 +17,3 @@ class InsufficientCreditException extends \RuntimeException
         parent::__construct($message, $code, $previous);
     }
 }
-

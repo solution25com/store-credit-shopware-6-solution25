@@ -40,15 +40,14 @@ class StoreCreditHistoryEntity extends Entity
      */
     protected ?CurrencyEntity $currency = null;
 
-    /**
-     * @var string
-     */
-    protected $reason;
+    protected ?string $reason = null;
 
     /**
      * @var string
      */
     protected $actionType;
+
+    protected ?string $idempotencyKey = null;
 
     /**
      * @var \DateTimeInterface|null
@@ -110,14 +109,24 @@ class StoreCreditHistoryEntity extends Entity
         $this->amount = $amount;
     }
 
-    public function getReason(): string
+    public function getReason(): ?string
     {
         return $this->reason;
     }
 
-    public function setReason(string $reason): void
+    public function setReason(?string $reason): void
     {
         $this->reason = $reason;
+    }
+
+    public function getIdempotencyKey(): ?string
+    {
+        return $this->idempotencyKey;
+    }
+
+    public function setIdempotencyKey(?string $idempotencyKey): void
+    {
+        $this->idempotencyKey = $idempotencyKey;
     }
 
     public function getActionType(): string

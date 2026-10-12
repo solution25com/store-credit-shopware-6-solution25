@@ -4,43 +4,78 @@
         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/shopware/trunk/src/Core/System/SystemConfig/Schema/config.xsd">
 
     <card>
-        <title>Store Credit Limits</title>
+        <title lang="en-GB">Store Credit Limits</title>
+        <title lang="de-DE">Store-Credit-Limits</title>
         
         <input-field type="float">
             <name>maxCreditPerOrder</name>
             <label lang="en-GB">Maximum credit per order</label>
+            <label lang="de-DE">Maximaler Credit pro Bestellung</label>
             <default>0</default>
             <helpText lang="en-GB">Maximum store credit amount that can be applied per order (0 = no limit)</helpText>
+            <helpText lang="de-DE">Maximaler Store-Credit-Betrag pro Bestellung (0 = kein Limit)</helpText>
         </input-field>
     </card>
 
     <card>
-        <title>Product Restrictions</title>
+        <title lang="en-GB">Pending Order Reservations</title>
+        <title lang="de-DE">Reservierungen für offene Bestellungen</title>
+
+        <input-field type="int">
+            <name>pendingReservationMaxAgeDays</name>
+            <label lang="en-GB">Reservation age limit (days)</label>
+            <label lang="de-DE">Reservierungsdauer (Tage)</label>
+            <default>14</default>
+            <helpText lang="en-GB">Store credit applied to an unpaid order is held back from the customer's available balance for this many days after the order date. Older unpaid orders release it. 0 = hold indefinitely.</helpText>
+            <helpText lang="de-DE">Guthaben, das auf eine unbezahlte Bestellung angewendet wurde, wird so viele Tage nach dem Bestelldatum vom verfügbaren Guthaben zurückgehalten. Ältere unbezahlte Bestellungen geben es frei. 0 = unbegrenzt zurückhalten.</helpText>
+        </input-field>
+    </card>
+
+    <card>
+        <title lang="en-GB">Product Restrictions</title>
+        <title lang="de-DE">Produkteinschrankungen</title>
 
         <component name="sw-entity-multi-id-select">
             <name>restrictedProducts</name>
             <entity>product</entity>
             <label lang="en-GB">Restricted products</label>
+            <label lang="de-DE">Eingeschrankte Produkte</label>
             <helpText lang="en-GB">Select the products for which you want to be restricted from using store credits</helpText>
+            <helpText lang="de-DE">Wahle Produkte aus, fur die Store Credits nicht verwendet werden durfen</helpText>
         </component>
     </card>
 
     <card>
-    <title>Store Credit Add State</title>
-    <input-field type="bool">
-        <name>runInstallOrderStateCommand</name>
-        <label lang="en-GB">Run Order State Installer</label>
-        <helpText lang="en-GB">Toggle and save to execute the order state installation command.</helpText>
-    </input-field>
-    </card>
+        <title lang="en-GB">Checkout behaviour</title>
+        <title lang="de-DE">Checkout-Verhalten</title>
 
-    <card>
-        <title>Checkout behaviour</title>
+        <component name="sw-multi-tag-select">
+            <name>blockedLineItemReferenceIds</name>
+            <label lang="en-GB">Blocked line item reference IDs</label>
+            <label lang="de-DE">Blockierte Line-Item-Referenz-IDs</label>
+            <helpText lang="en-GB">Store credit cannot be applied while a line item with one of these referenced IDs is in the cart (e.g. premium-protection-fee). Empty = no restriction.</helpText>
+            <helpText lang="de-DE">Store Credit kann nicht angewendet werden, solange sich ein Line Item mit einer dieser Referenz-IDs im Warenkorb befindet (z. B. premium-protection-fee). Leer = keine Einschrankung.</helpText>
+        </component>
+
         <input-field type="bool">
             <name>expandStoreCreditByDefault</name>
             <label lang="en-GB">Expand store credit section by default</label>
+            <label lang="de-DE">Store-Credit-Bereich standardmaig ausgeklappt anzeigen</label>
             <default>true</default>
             <helpText lang="en-GB">If enabled, the store credit panel on checkout confirm will be expanded by default instead of collapsed.</helpText>
+            <helpText lang="de-DE">Wenn aktiviert, wird das Store-Credit-Panel auf der Checkout-Bestatigung standardmaig ausgeklappt angezeigt.</helpText>
+        </input-field>
+    </card>
+
+    <card>
+        <title lang="en-GB">Store Credit Add State</title>
+        <title lang="de-DE">Store-Credit-Status hinzufugen</title>
+        <input-field type="bool">
+            <name>runInstallOrderStateCommand</name>
+            <label lang="en-GB">Run Order State Installer</label>
+            <label lang="de-DE">Order-Status-Installer ausfuhren</label>
+            <helpText lang="en-GB">Toggle and save to execute the order state installation command.</helpText>
+            <helpText lang="de-DE">Aktivieren und speichern, um den Installationsbefehl fur den Order-Status auszufuhren.</helpText>
         </input-field>
     </card>
 

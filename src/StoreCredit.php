@@ -33,7 +33,15 @@ class StoreCredit extends Plugin
             return;
         }
 
+        if ($this->container === null) {
+            return;
+        }
+
         $connection = $this->container->get(Connection::class);
+        if (!$connection instanceof Connection) {
+            return;
+        }
+
         $connection->executeStatement('DROP TABLE IF EXISTS `solu1_store_credit_history`');
         $connection->executeStatement('DROP TABLE IF EXISTS `solu1_store_credit`');
     }

@@ -50,7 +50,7 @@ class Migration1732876320RenameStoreCreditTables extends MigrationStep
             return;
         }
 
-        if ($oldTableExists && !$newTableExists) {
+        if (!$newTableExists) {
             $this->dropForeignKeys($connection, $oldTableName);
             $connection->executeStatement(sprintf('RENAME TABLE `%s` TO `%s`', $oldTableName, $newTableName));
             $this->recreateForeignKeys($connection, $newTableName);
@@ -224,4 +224,3 @@ class Migration1732876320RenameStoreCreditTables extends MigrationStep
         }
     }
 }
-

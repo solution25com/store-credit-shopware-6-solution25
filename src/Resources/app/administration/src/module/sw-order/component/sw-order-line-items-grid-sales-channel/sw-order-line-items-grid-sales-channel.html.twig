@@ -2,7 +2,8 @@
     {% block sw_alert_message %}
 <br>
             <sw-alert variant="warning">
-                To apply store credits from the customer balance, add a credit item then use the specific discount name: <strong>Store credit discount</strong>
+                {{ $tc('store-credits.order.creditLineItemHelpPrefix') }}
+                <strong>{{ $tc('store-credits.order.discountName') }}</strong>
             </sw-alert>
     {% endblock %}
 

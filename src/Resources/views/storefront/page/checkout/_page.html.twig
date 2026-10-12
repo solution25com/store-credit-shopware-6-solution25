@@ -8,29 +8,33 @@
         <div class="store-credit-balance" data-cart-price>
             {% set maxCreditPerOrder = page.maxCreditPerOrder|default(0) %}
             {% if page.storeCreditBalance|default(0) > 0 %}
-                <div class="cds-store-credit-wrapper">
-                    <div class="cds-checkout-store-credit">
-                        <a class="cds-btn-store-credit d-flex align-items-center justify-content-between{% if not page.storeCreditExpandedByDefault %} collapsed{% endif %}"
+                <div class="store-credit-checkout-wrapper">
+                    <div class="store-credit-checkout">
+                        <a class="store-credit-checkout-toggle d-flex align-items-center justify-content-between{% if not page.storeCreditExpandedByDefault %} collapsed{% endif %}"
                            data-bs-toggle="collapse" href="#storeCredit"
                            role="button" aria-expanded="{% if page.storeCreditExpandedByDefault %}true{% else %}false{% endif %}" aria-controls="storeCredit">
-                            <p class="mb-0 d-flex align-items-center">
+                            <span class="store-credit-checkout-toggle-label mb-0 d-flex align-items-center">
                                 {{ 'store-credit.title'|trans|sw_sanitize }}
-                            </p>
+                            </span>
                             {% sw_icon 'arrow-medium-down' style { size: 'sm', pack: 'solid', ariaHidden: true } %}
                         </a>
                         <div class="collapse{% if page.storeCreditExpandedByDefault %} show{% endif %}" id="storeCredit">
-                            <div class="card card-body cds-store-credit-card-body">
+                            <div class="card card-body store-credit-checkout-card-body">
                                 {% set totalBalanceCalculated = page.storeCreditBalance %}
                                 {% if page.cart.lineItems.elements[storeCreditId].price.totalPrice %}
                                     {% set totalBalanceCalculated = totalBalanceCalculated + page.cart.lineItems.elements[storeCreditId].price.totalPrice %}
                                 {% endif %}
                                 <p class="store-credit-balance">
                                     {{ 'store-credit.description'|trans|sw_sanitize }}: {{ totalBalanceCalculated | currency }}
+                                    {% if page.storeCreditWalletCurrencyIsoCode %}
+                                        <small class="store-credit-wallet-amount d-block">{{ 'store-credit.convertedNote'|trans({'%currency%': page.storeCreditWalletCurrencyIsoCode})|sw_sanitize }}</small>
+                                    {% endif %}
                                 </p>
                                 {% set maxAllowedCredit = min(totalBalanceCalculated, page.cart.price.rawTotal) %}
-                                <form id="store-credit-form" method="POST"
+                                <form id="store-credit-form" class="store-credit-checkout-form" method="POST"
+                                      data-form-csrf-handler="true"
                                       action="{{ path('frontend.store.credit.apply') }}">
-                                    <div class="form-group cds-input-style">
+                                    <div class="form-group store-credit-input-style store-credit-checkout-form-group">
                                         <input
                                                 type="number"
                                                 id="storeCreditAmount"
@@ -39,12 +43,12 @@
                                                 max="{{ maxAllowedCredit }}"
                                                 step="0.01"
                                                 required
-                                                class="form-control"
+                                                class="form-control store-credit-checkout-form-control"
                                                 placeholder=""
                                         >
                                         <label for="storeCreditAmount"
                                                class="form-label">{{ 'store-credit.label'|trans }}</label>
-                                        <small id="exceedCreditMessage" style="display: none; color: red;">
+                                        <small id="exceedCreditMessage" class="store-credit-exceed-message">
                                             {{ 'store-credit.amount-alert'|trans }}
                                         </small>
                                     </div>

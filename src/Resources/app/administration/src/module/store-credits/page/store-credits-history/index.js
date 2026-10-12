@@ -15,7 +15,7 @@ Component.register('store-credits-history', {
         return {
             "history": [],
             "isLoading": false,
-            "customerName": this.$route.query.name || 'Unknown',
+            "customerName": this.$route.query.name || this.$tc('store-credits.common.unknown'),
             "customerBalance": parseFloat(this.$route.query.balance) || 0,
             "currencyIsoCode": null,
             "page": 1,
@@ -77,8 +77,8 @@ Component.register('store-credits-history', {
                             stack: error.stack,
                         });
                         this.createNotificationError({
-                            title: 'Error',
-                            message: error.response?.data?.errors?.[0]?.detail || error.message || 'Failed to fetch history.',
+                            title: this.$tc('store-credits.common.error'),
+                            message: error.response?.data?.errors?.[0]?.detail || error.message || this.$tc('store-credits.history.fetchFailed'),
                         });
                     })
                     .finally(() => {
@@ -87,8 +87,8 @@ Component.register('store-credits-history', {
             } catch (error) {
                 console.error('Error creating repository:', error);
                 this.createNotificationError({
-                    title: 'Error',
-                    message: error.message || 'Failed to create repository for store credit history.',
+                    title: this.$tc('store-credits.common.error'),
+                    message: error.message || this.$tc('store-credits.history.repoCreateFailed'),
                 });
                 this.isLoading = false;
             }

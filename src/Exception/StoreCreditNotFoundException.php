@@ -17,4 +17,3 @@ class StoreCreditNotFoundException extends \RuntimeException
         parent::__construct($message, $code, $previous);
     }
 }
-

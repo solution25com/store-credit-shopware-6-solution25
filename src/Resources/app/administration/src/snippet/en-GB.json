@@ -1,18 +1,100 @@
 {
-    "store-credits": {
-        "listing": {
-            "searchPlaceholder": "Search by customer name, email, or customer number..."
-        },
-        "customer": {
-            "tabTitle": "Store Credits",
-            "currentBalance": "Current Balance",
-            "addCredit": "Add Credit",
-            "deductCredit": "Deduct Credit",
-            "amount": "Amount",
-            "amountPlaceholder": "Enter amount",
-            "reason": "Reason",
-            "reasonPlaceholder": "Enter reason (optional)"
-        }
+  "store-credits": {
+    "module": {
+      "title": "Store Credits",
+      "description": "Manage customer store credits.",
+      "historyTitle": "Store Credit History"
+    },
+    "common": {
+      "error": "Error",
+      "success": "Success",
+      "back": "Back",
+      "cancel": "Cancel",
+      "submit": "Submit",
+      "delete": "Delete",
+      "unknown": "Unknown",
+      "adminUpdate": "Admin update",
+      "adminAdded": "Admin added store credit",
+      "adminDeducted": "Admin deducted store credit"
+    },
+    "listing": {
+      "searchPlaceholder": "Search by customer name, email, or customer number...",
+      "addCustomerCredit": "Add Customer Credit",
+      "customerFullName": "Customer Full Name",
+      "balance": "Balance",
+      "balanceActions": "Balance Actions",
+      "addBalance": "Add Balance",
+      "deductBalance": "Deduct Balance",
+      "viewHistory": "View History",
+      "confirmDelete": "Confirm Delete",
+      "confirmDeleteText": "Are you sure you want to delete this customer's store credit and all the history? This action cannot be undone.",
+      "invalidStoreCreditId": "Invalid store credit ID.",
+      "invalidSelection": "Invalid store credit selection.",
+      "loadFailed": "Failed to load store credits. Please refresh the page.",
+      "addBalanceFailed": "Failed to add balance.",
+      "deductBalanceFailed": "Failed to deduct balance.",
+      "addStoreCreditFailed": "Failed to add store credit.",
+      "deleteStoreCreditFailed": "Failed to delete store credit.",
+      "amountMustBePositive": "Amount must be greater than zero.",
+      "selectCustomer": "Please select a customer.",
+      "addedSuccess": "Balance added successfully!",
+      "deductedSuccess": "Balance deducted successfully!",
+      "creditAddedSuccess": "Store credit added successfully!",
+      "deletedSuccess": "Store credit deleted successfully!",
+      "addBalanceModalTitle": "Add Balance",
+      "deductBalanceModalTitle": "Deduct Balance",
+      "addCustomerModalTitle": "Add Customer Store Credit",
+      "amountCardTitle": "Amount",
+      "amountLabel": "Amount",
+      "amountPlaceholder": "Enter amount",
+      "reasonLabel": "Reason",
+      "reasonAddPlaceholder": "Enter reason for adding balance",
+      "reasonDeductPlaceholder": "Enter reason for deducting balance"
+    },
+    "history": {
+      "backToStoreCredits": "Back to Store Credits",
+      "currentBalance": "Current Balance",
+      "transactionHistory": "Transaction History",
+      "dateTime": "Date & Time",
+      "amount": "Amount",
+      "reason": "Reason",
+      "type": "Type",
+      "added": "Added",
+      "deducted": "Deducted",
+      "fetchFailed": "Failed to fetch history.",
+      "repoCreateFailed": "Failed to create repository for store credit history."
+    },
+    "customerGrid": {
+      "selectCustomer": "Select Customer",
+      "searchPlaceholder": "Search for customers...",
+      "name": "Name",
+      "customerNumber": "Customer Number",
+      "email": "Email"
+    },
+    "customer": {
+      "tabTitle": "Store Credits",
+      "currentBalance": "Current Balance",
+      "addCredit": "Add Credit",
+      "deductCredit": "Deduct Credit",
+      "amount": "Amount",
+      "amountPlaceholder": "Enter amount",
+      "reason": "Reason",
+      "reasonPlaceholder": "Enter reason (optional)",
+      "amountCannotExceedBalance": "Amount cannot exceed current balance.",
+      "addFailed": "Failed to add store credit.",
+      "deductFailed": "Failed to deduct store credit.",
+      "addSuccess": "Store credit added successfully!",
+      "deductSuccess": "Store credit deducted successfully!",
+      "reserved": "Reserved for pending orders",
+      "available": "Available",
+      "reservedOn": "Held for order(s): {orders}",
+      "expiredOn": "No longer held (older than the reservation limit): {orders}",
+      "reservedConfirmMessage": "Only {available} is available. {reserved} is reserved for pending orders. Confirm to deduct reserved credit.",
+      "reservedConfirmCheckbox": "Deduct reserved credit anyway"
+    },
+    "order": {
+      "creditLineItemHelpPrefix": "To apply store credits from the customer balance, add a credit item then use the specific discount name:",
+      "discountName": "Store credit discount"
     }
+  }
 }
-

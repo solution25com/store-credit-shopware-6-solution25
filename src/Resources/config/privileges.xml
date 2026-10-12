@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<privileges xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/shopware/trunk/src/Core/Framework/Api/ApiDefinition/Generator/Schema/privileges-1.0.xsd">
+    <role key="store_credit.viewer">
+        <privilege>store_credit:read</privilege>
+    </role>
+
+    <role key="store_credit.editor">
+        <privilege>store_credit:read</privilege>
+        <privilege>store_credit:create</privilege>
+        <privilege>store_credit:update</privilege>
+    </role>
+</privileges>

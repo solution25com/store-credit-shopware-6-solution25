@@ -13,61 +13,61 @@
     .customer-info-card {
         padding: 0;
         margin-top: 16px;
+    }
 
-        .customer-info-content {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 20px;
-            background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
-            border-radius: 8px;
-            border: 1px solid #e5e8ec;
+    .customer-info-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px;
+        background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+        border-radius: 8px;
+        border: 1px solid #e5e8ec;
+    }
 
-            .customer-name-section {
-                display: flex;
-                align-items: center;
-                gap: 16px;
+    .customer-name-section {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
 
-                .customer-name {
-                    margin: 0;
-                    font-size: 20px;
-                    font-weight: 600;
-                    color: #2c3e50;
-                }
+    .customer-name {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+        color: #2c3e50;
+    }
 
-                .customer-name-link {
-                    color: #189eff;
-                    text-decoration: none;
-                    transition: color 0.2s ease;
+    .customer-name-link {
+        color: #189eff;
+        text-decoration: none;
+        transition: color 0.2s ease;
 
-                    &:hover {
-                        color: #0d7dd8;
-                        text-decoration: underline;
-                    }
+        &:hover {
+            color: #0d7dd8;
+            text-decoration: underline;
+        }
 
-                    .customer-name {
-                        color: inherit;
-                    }
-                }
+        .customer-name {
+            color: inherit;
+        }
+    }
 
-                .customer-balance {
-                    margin: 8px 0 0;
-                    font-size: 14px;
-                    color: #758ca3;
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
+    .customer-balance {
+        margin: 8px 0 0;
+        font-size: 14px;
+        color: #758ca3;
+        display: flex;
+        align-items: center;
+        gap: 6px;
 
-                    sw-icon {
-                        color: #37d046;
-                    }
+        sw-icon {
+            color: #37d046;
+        }
 
-                    strong {
-                        color: #189eff;
-                        font-size: 16px;
-                    }
-                }
-            }
+        strong {
+            color: #189eff;
+            font-size: 16px;
         }
     }
 }

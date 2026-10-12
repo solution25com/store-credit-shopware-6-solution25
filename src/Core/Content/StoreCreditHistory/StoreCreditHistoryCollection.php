@@ -4,6 +4,9 @@ namespace Solu1StoreCredit\Core\Content\StoreCreditHistory;
 
 use Shopware\Core\Framework\DataAbstractionLayer\EntityCollection;
 
+/**
+ * @extends EntityCollection<StoreCreditHistoryEntity>
+ */
 class StoreCreditHistoryCollection extends EntityCollection
 {
     protected function getExpectedClass(): string

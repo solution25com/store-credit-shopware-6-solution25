@@ -7,6 +7,7 @@ use Shopware\Core\Checkout\Order\OrderDefinition;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityDefinition;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\DateTimeField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\FkField;
+use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\AllowEmptyString;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\PrimaryKey;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\FloatField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\IdField;
@@ -41,8 +42,9 @@ class StoreCreditHistoryDefinition extends EntityDefinition
             new FkField('order_id', 'orderId', OrderDefinition::class, 'id'),
             new FkField('currency_id', 'currencyId', CurrencyDefinition::class, 'id'),
             (new FloatField('amount', 'amount'))->addFlags(new Required()),
-            (new StringField('reason', 'reason', 255)),
+            (new StringField('reason', 'reason', 255))->addFlags(new AllowEmptyString()),
             (new StringField('action_type', 'actionType'))->addFlags(new Required()),
+            new StringField('idempotency_key', 'idempotencyKey', 128),
             (new DateTimeField('created_at', 'createdAt'))->addFlags(new Required()),
             (new DateTimeField('updated_at', 'updatedAt'))->addFlags(new Required()),
 

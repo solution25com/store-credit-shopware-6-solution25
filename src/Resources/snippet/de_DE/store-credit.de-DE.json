@@ -1,0 +1,48 @@
+{
+  "store-credit": {
+    "title": "Store Credit",
+    "sidebarLabel": "Store Credits",
+    "description": "Store-Credit-Guthaben",
+    "convertedNote": "Umgerechnet aus Ihrem Guthaben in %currency% zum aktuellen Wechselkurs.",
+    "label": "Betrag fur den Rabatt eingeben",
+    "amount-alert": "Der Betrag uberschreitet den maximal erlaubten Credit fur die Bestellung.",
+    "button": "Credit anwenden",
+    "table": {
+      "dateTime": "Datum & Uhrzeit",
+      "amount": "Betrag",
+      "reason": "Grund",
+      "notSpecified": "Nicht angegeben",
+      "noHistory": "Keine Store-Credit-Historie gefunden.",
+      "pagination": "Store-Credit-Historie-Paginierung",
+      "previous": "Zuruck",
+      "next": "Weiter"
+    },
+    "flash": {
+      "invalidAmountOrCustomer": "Ungultiger Betrag oder Kunde nicht angemeldet.",
+      "maxPerOrder": "Der maximale Store Credit pro Bestellung ist %max%. Sie konnen nur noch %remaining% anwenden.",
+      "exceedsAvailable": "Der angeforderte Betrag ubersteigt den verfugbaren Store Credit.",
+      "premiumProtection": "Store Credit kann nicht angewendet werden, wenn Premium Protection aktiv ist.",
+      "appliedSuccess": "Store Credit wurde erfolgreich angewendet.",
+      "alreadyFullyCovered": "Ihr Bestellbetrag ist bereits vollständig mit Guthaben gedeckt.",
+      "restrictedProducts": "Store Credit kann wegen eingeschrankter Produkte im Warenkorb nicht angewendet werden: %products%"
+    },
+    "api": {
+      "amountMustBePositive": "Der Betrag muss groer als null sein.",
+      "addUnexpectedError": "Beim Hinzufugen von Store Credit ist ein unerwarteter Fehler aufgetreten.",
+      "deductUnexpectedError": "Beim Abziehen von Store Credit ist ein unerwarteter Fehler aufgetreten.",
+      "balanceUnexpectedError": "Beim Abrufen des Store-Credit-Guthabens ist ein unerwarteter Fehler aufgetreten.",
+      "customerRequired": "Ein Kunde ist erforderlich.",
+      "reservedConfirmationRequired": "Nur %available% ist verfügbar. %reserved% ist für offene Bestellungen reserviert. Bestätigen Sie, um reserviertes Guthaben abzuziehen."
+    },
+    "placement": {
+      "clampedTo": "Ihr Guthaben wurde auf %amount% reduziert, da Ihr verfügbares Guthaben geringer ist als der angewendete Betrag.",
+      "removed": "Ihr Guthaben konnte nicht angewendet werden, da kein Guthaben verfügbar ist. Ein Teil ist möglicherweise für eine andere Bestellung reserviert."
+    },
+    "account": {
+      "balance": "Guthaben",
+      "reserved": "Für offene Bestellungen reserviert",
+      "reservedOn": "Reserviert für Bestellung(en):",
+      "available": "Verfügbar"
+    }
+  }
+}

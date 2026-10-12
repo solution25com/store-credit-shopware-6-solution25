@@ -1,9 +1,9 @@
 <template>
   <div>
-    <sw-card title="Select Customer">
+    <sw-card :title="$tc('store-credits.customerGrid.selectCustomer')">
       <sw-text-field 
         v-model:value="searchTerm" 
-        placeholder="Search for customers..." 
+        :placeholder="$tc('store-credits.customerGrid.searchPlaceholder')" 
         @input="onSearch"
       />
 

@@ -1,0 +1,48 @@
+{
+  "store-credit": {
+    "title": "Store Credit",
+    "sidebarLabel": "Store Credits",
+    "description": "Store Credit Balance",
+    "convertedNote": "Converted from your %currency% store credit at the current exchange rate.",
+    "label": "Enter Amount to Apply as Discount",
+    "amount-alert": "The amount exceeds the maximum allowed credit for order.",
+    "button": "Apply Credit",
+    "table": {
+      "dateTime": "Date & Time",
+      "amount": "Amount",
+      "reason": "Reason",
+      "notSpecified": "Not specified",
+      "noHistory": "No store credits history found.",
+      "pagination": "Store credit history pagination",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "flash": {
+      "invalidAmountOrCustomer": "Invalid amount or customer not logged in.",
+      "maxPerOrder": "Maximum store credit per order is %max%. You can only apply %remaining% more.",
+      "exceedsAvailable": "Requested amount exceeds available store credit.",
+      "premiumProtection": "Store credit cannot be applied when premium protection is active.",
+      "appliedSuccess": "Store credit applied successfully.",
+      "alreadyFullyCovered": "Your order total is already fully covered by store credit.",
+      "restrictedProducts": "Store credit cannot be applied due to restricted products in the cart: %products%"
+    },
+    "api": {
+      "amountMustBePositive": "Amount must be greater than zero.",
+      "addUnexpectedError": "An unexpected error occurred while adding store credit.",
+      "deductUnexpectedError": "An unexpected error occurred while deducting store credit.",
+      "balanceUnexpectedError": "An unexpected error occurred while fetching store credit balance.",
+      "customerRequired": "A customer is required.",
+      "reservedConfirmationRequired": "Only %available% is available. %reserved% is reserved for pending orders. Confirm to deduct reserved credit."
+    },
+    "placement": {
+      "clampedTo": "Your store credit was reduced to %amount% because your available balance is lower than the amount you applied.",
+      "removed": "Your store credit could not be applied because no balance is available. Part of it may be reserved for another order."
+    },
+    "account": {
+      "balance": "Balance",
+      "reserved": "Reserved for pending orders",
+      "reservedOn": "Held for order(s):",
+      "available": "Available"
+    }
+  }
+}

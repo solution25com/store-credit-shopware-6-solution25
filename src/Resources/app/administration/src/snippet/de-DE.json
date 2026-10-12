@@ -1,0 +1,100 @@
+{
+  "store-credits": {
+    "module": {
+      "title": "Store Credits",
+      "description": "Kunden-Store-Credits verwalten.",
+      "historyTitle": "Store-Credit-Historie"
+    },
+    "common": {
+      "error": "Fehler",
+      "success": "Erfolg",
+      "back": "Zuruck",
+      "cancel": "Abbrechen",
+      "submit": "Speichern",
+      "delete": "Loschen",
+      "unknown": "Unbekannt",
+      "adminUpdate": "Admin-Aktualisierung",
+      "adminAdded": "Store Credit durch Admin hinzugefugt",
+      "adminDeducted": "Store Credit durch Admin abgezogen"
+    },
+    "listing": {
+      "searchPlaceholder": "Nach Kundenname, E-Mail oder Kundennummer suchen...",
+      "addCustomerCredit": "Kunden-Store-Credit hinzufugen",
+      "customerFullName": "Vollstandiger Kundenname",
+      "balance": "Guthaben",
+      "balanceActions": "Guthaben-Aktionen",
+      "addBalance": "Guthaben hinzufugen",
+      "deductBalance": "Guthaben abziehen",
+      "viewHistory": "Historie anzeigen",
+      "confirmDelete": "Loschen bestatigen",
+      "confirmDeleteText": "Mochten Sie den Store Credit dieses Kunden und die gesamte Historie wirklich loschen? Diese Aktion kann nicht ruckgangig gemacht werden.",
+      "invalidStoreCreditId": "Ungultige Store-Credit-ID.",
+      "invalidSelection": "Ungultige Store-Credit-Auswahl.",
+      "loadFailed": "Store Credits konnten nicht geladen werden. Bitte Seite aktualisieren.",
+      "addBalanceFailed": "Guthaben konnte nicht hinzugefugt werden.",
+      "deductBalanceFailed": "Guthaben konnte nicht abgezogen werden.",
+      "addStoreCreditFailed": "Store Credit konnte nicht hinzugefugt werden.",
+      "deleteStoreCreditFailed": "Store Credit konnte nicht geloscht werden.",
+      "amountMustBePositive": "Der Betrag muss groer als null sein.",
+      "selectCustomer": "Bitte einen Kunden auswahlen.",
+      "addedSuccess": "Guthaben erfolgreich hinzugefugt!",
+      "deductedSuccess": "Guthaben erfolgreich abgezogen!",
+      "creditAddedSuccess": "Store Credit erfolgreich hinzugefugt!",
+      "deletedSuccess": "Store Credit erfolgreich geloscht!",
+      "addBalanceModalTitle": "Guthaben hinzufugen",
+      "deductBalanceModalTitle": "Guthaben abziehen",
+      "addCustomerModalTitle": "Kunden-Store-Credit hinzufugen",
+      "amountCardTitle": "Betrag",
+      "amountLabel": "Betrag",
+      "amountPlaceholder": "Betrag eingeben",
+      "reasonLabel": "Grund",
+      "reasonAddPlaceholder": "Grund fur Guthabenhinzufugung eingeben",
+      "reasonDeductPlaceholder": "Grund fur Guthabenabzug eingeben"
+    },
+    "history": {
+      "backToStoreCredits": "Zuruck zu Store Credits",
+      "currentBalance": "Aktuelles Guthaben",
+      "transactionHistory": "Transaktionshistorie",
+      "dateTime": "Datum & Uhrzeit",
+      "amount": "Betrag",
+      "reason": "Grund",
+      "type": "Typ",
+      "added": "Hinzugefugt",
+      "deducted": "Abgezogen",
+      "fetchFailed": "Historie konnte nicht geladen werden.",
+      "repoCreateFailed": "Repository fur Store-Credit-Historie konnte nicht erstellt werden."
+    },
+    "customerGrid": {
+      "selectCustomer": "Kunde auswahlen",
+      "searchPlaceholder": "Nach Kunden suchen...",
+      "name": "Name",
+      "customerNumber": "Kundennummer",
+      "email": "E-Mail"
+    },
+    "customer": {
+      "tabTitle": "Store Credits",
+      "currentBalance": "Aktuelles Guthaben",
+      "addCredit": "Credit hinzufugen",
+      "deductCredit": "Credit abziehen",
+      "amount": "Betrag",
+      "amountPlaceholder": "Betrag eingeben",
+      "reason": "Grund",
+      "reasonPlaceholder": "Grund eingeben (optional)",
+      "amountCannotExceedBalance": "Der Betrag darf das aktuelle Guthaben nicht ubersteigen.",
+      "addFailed": "Store Credit konnte nicht hinzugefugt werden.",
+      "deductFailed": "Store Credit konnte nicht abgezogen werden.",
+      "addSuccess": "Store Credit erfolgreich hinzugefugt!",
+      "deductSuccess": "Store Credit erfolgreich abgezogen!",
+      "reserved": "Für offene Bestellungen reserviert",
+      "available": "Verfügbar",
+      "reservedOn": "Reserviert für Bestellung(en): {orders}",
+      "expiredOn": "Nicht mehr reserviert (älter als die Reservierungsdauer): {orders}",
+      "reservedConfirmMessage": "Nur {available} ist verfügbar. {reserved} ist für offene Bestellungen reserviert. Bestätigen Sie, um reserviertes Guthaben abzuziehen.",
+      "reservedConfirmCheckbox": "Reserviertes Guthaben trotzdem abziehen"
+    },
+    "order": {
+      "creditLineItemHelpPrefix": "Um Store Credits aus dem Kundenguthaben anzuwenden, fugen Sie eine Gutschrift hinzu und verwenden Sie den spezifischen Rabattnamen:",
+      "discountName": "Store credit discount"
+    }
+  }
+}

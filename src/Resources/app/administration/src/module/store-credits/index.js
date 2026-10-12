@@ -4,8 +4,8 @@ import './page/store-credits-history'
 Shopware.Module.register('store-credits', {
     type: 'plugin',
     name: 'store-credits',
-    title: 'Store Credits',
-    description: 'Manage customer store credits.',
+    title: 'store-credits.module.title',
+    description: 'store-credits.module.description',
     color: '#ffcc00',
     icon: 'default-money-coin',
     routes: {
@@ -20,7 +20,7 @@ Shopware.Module.register('store-credits', {
     },
     navigation: [
         {
-            label: 'Store Credits',
+            label: 'store-credits.module.title',
             color: '#ffcc00',
             path: 'store.credits.index',
             icon: 'default-money-coin',

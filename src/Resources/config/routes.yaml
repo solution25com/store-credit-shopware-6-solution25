@@ -1,0 +1,11 @@
+store_credit_controllers:
+    resource:
+        path: ../../Controller/
+        namespace: Solu1StoreCredit\Controller
+    type: attribute
+
+store_credit_storefront_controllers:
+    resource:
+        path: ../../Storefront/Controller/
+        namespace: Solu1StoreCredit\Storefront\Controller
+    type: attribute
